@@ -1,0 +1,58 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    background-color: #007bff;
+    color: white;
+    padding: 20px;
+    margin: 0;
+}
+
+button {
+    font-size: 16px;
+    padding: 10px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button#connect-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+button#connect-btn:hover {
+    background-color: #218838;
+}
+
+button#led-on-btn {
+    background-color: #ffc107;
+    color: white;
+}
+
+button#led-on-btn:hover {
+    background-color: #e0a800;
+}
+
+button#led-off-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+button#led-off-btn:hover {
+    background-color: #c82333;
+}
+
+footer {
+    margin-top: 30px;
+    font-size: 14px;
+    color: #666;
+}
