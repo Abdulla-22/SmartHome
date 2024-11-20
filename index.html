@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Smart Home</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h1>ESP32 Smart Home</h1>
+
+    <h2>Control Panel</h2>
+    <button onclick="sendCommand('/on')">Turn LED On</button>
+    <button onclick="sendCommand('/off')">Turn LED Off</button>
+    <br><br>
+    <button onclick="sendCommand('/buzzer/on')">Turn Buzzer On</button>
+    <button onclick="sendCommand('/buzzer/off')">Turn Buzzer Off</button>
+
+    <h2>Logs</h2>
+    <div id="log-area"
+        style="width: 80%; height: 150px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll; background-color: #f9f9f9; margin: auto; text-align: left;">
+    </div>
+    <br>
+    <button onclick="clearLogArea()">Clear Logs</button> <!-- Clear Logs Button -->
+
+    <footer>
+        <p>&copy; 2024 ESP32 Smart Home Project</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

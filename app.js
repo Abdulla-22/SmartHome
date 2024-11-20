@@ -1,49 +1,19 @@
-let bluetoothDevice;
-let bluetoothServer;
-let bluetoothCharacteristic;
+function sendCommand(url) {
+    // Fetch the command URL from the ESP32
+    fetch(url)
+        .then(response => response.text()) // Get the response as text
+        .then(data => logMessage(data))    // Display the response in the log area
+        .catch(error => logMessage("Error: " + error)); // Log errors
+}
 
-// UUIDs for the Bluetooth service and characteristic (adjust based on your module)
-const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // Example UUID
-const CHARACTERISTIC_UUID = '0000ffe1-0000-1000-8000-00805f9b34fb';
+function logMessage(message) {
+    const logArea = document.getElementById("log-area");
+    const timestamp = new Date().toLocaleTimeString();
+    logArea.innerHTML += `<p>[${timestamp}] ${message}</p>`; // Append new message with timestamp
+    logArea.scrollTop = logArea.scrollHeight; // Scroll to the bottom
+}
 
-document.getElementById('connect-btn').addEventListener('click', async () => {
-    try {
-        // Request Bluetooth device
-        bluetoothDevice = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: [SERVICE_UUID]
-        });
-
-        // Connect to the Bluetooth server
-        bluetoothServer = await bluetoothDevice.gatt.connect();
-
-        // Get the primary service
-        const service = await bluetoothServer.getPrimaryService(SERVICE_UUID);
-
-        // Get the characteristic
-        bluetoothCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-
-        alert('Connected to Arduino!');
-    } catch (error) {
-        console.error('Bluetooth connection failed:', error);
-        alert('Bluetooth connection failed!');
-    }
-});
-
-document.getElementById('led-on-btn').addEventListener('click', () => {
-    sendData('1'); // Command to turn LED on
-});
-
-document.getElementById('led-off-btn').addEventListener('click', () => {
-    sendData('0'); // Command to turn LED off
-});
-
-async function sendData(command) {
-    if (!bluetoothCharacteristic) {
-        alert('Not connected to Arduino!');
-        return;
-    }
-    const encoder = new TextEncoder();
-    await bluetoothCharacteristic.writeValue(encoder.encode(command));
-    alert(`Command "${command}" sent to Arduino`);
+function clearLogArea() {
+    const logArea = document.getElementById("log-area");
+    logArea.innerHTML = ''; // Clear the log area content
 }
