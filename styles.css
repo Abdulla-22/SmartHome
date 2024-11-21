@@ -1,9 +1,9 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    background-color: #f4f4f4;
     margin: 0;
     padding: 0;
+    background-color: #f4f4f4;
   }
   
   h1 {
@@ -21,7 +21,7 @@ body {
     background-color: #28a745;
     color: white;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s ease;
   }
   
   button:hover {
