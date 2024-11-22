@@ -3,6 +3,7 @@
 
 // Define a custom UART instance
 HardwareSerial MySerial(2);
+String TEXT = "";
 
 const char *ssid = "Zain_H122_CB1E";
 const char *password = "M6GJ2QEF53J";
@@ -132,6 +133,13 @@ void loop() {
         if (currentLine.endsWith("GET /on")) {
           Serial.println("Command received: LED_ON");
           MySerial.println("LED_ON"); // Send command to Arduino
+
+          TEXT = MySerial.readStringUntil('\n'); // Read the incoming command
+          TEXT.trim(); // Remove any extra whitespace
+
+          Serial.print("The received command: ");
+          Serial.println(TEXT);
+
           TestReciveData();
         } else if (currentLine.endsWith("GET /off")) {
           Serial.println("Command received: LED_OFF");
