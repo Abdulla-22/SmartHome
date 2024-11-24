@@ -134,3 +134,50 @@ This project implements a **Smart Home System** using the **ESP32**, **Arduino U
     "waterValve": "closed"
   }
 }
+```
+## How to start the web application using Python
+
+### How to Start a Python Server
+
+This guide provides step-by-step instructions for setting up and starting a Python server using the built-in HTTP server module. This method is simple, requires no additional installations, and is suitable for testing or serving files locally.
+
+---
+
+## Prerequisites
+
+- **Python Installed**: Ensure you have Python installed on your system.
+  - To check if Python is installed, open a terminal or command prompt and type:
+    ```bash
+    python --version
+    ```
+    or
+    ```bash
+    python3 --version
+    ```
+  - If Python is not installed, download and install it from the [official Python website](https://www.python.org/downloads/).
+
+---
+
+## Starting the Python HTTP Server
+
+1. **Open a Terminal or Command Prompt**:
+   Navigate to the directory containing the files you want to serve. You can use the `cd` command:
+   ```bash
+   cd /path/to/your/directory
+
+2. **Start the Server**: Depending on your Python version, run one of the following commands:
+- For Python 3:
+```bash
+python3 -m http.server 8080
+```
+
+- For Python 2:
+```bash
+python -m http.server 8080
+```
+
+3. **Access the Server**:
+- Open a web browser and navigate to:
+```
+http://localhost:8000
+``` 
