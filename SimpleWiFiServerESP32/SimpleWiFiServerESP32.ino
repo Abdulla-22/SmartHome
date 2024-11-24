@@ -1,168 +1,77 @@
-#include <WiFi.h>
-#include <HardwareSerial.h>
+#include <FireBase32.h>      // Include the FireBase32 library for Firebase operations
+#include <WiFi.h>            // Include the WiFi library for ESP32 WiFi functionality
+#include <HardwareSerial.h>  // Include the HardwareSerial library for UART communication
 
-// Define a custom UART instance
+// Firebase Configuration: Replace with your Firebase Realtime Database URL and API Key
+FireBase32 db("https://smatrhome-default-rtdb.firebaseio.com/", "AIzaSyAfLEWczY84xV9KDQbFKAugAIXrBwKeP_w");
+
+// UART Configuration: Use GPIO16 (RX) and GPIO17 (TX) for communication with the Arduino
 HardwareSerial MySerial(2);
-String TEXT = "";
 
-const char *ssid = "Zain_H122_CB1E";
-const char *password = "M6GJ2QEF53J";
+// Pin Definitions
+const int ledPin = 2; // ESP32 built-in LED pin for feedback
+String command = "";  // String to store incoming commands
 
-WiFiServer server(80);
+// Sensor Data
+int sensorData = 0; // Placeholder for sensor data received from the Arduino
 
 void setup() {
-  Serial.begin(115200); // Debugging Serial Monitor
-  MySerial.begin(9600, SERIAL_8N1, 16, 17); // GPIO16 as RX, GPIO17 as TX
+  // Start debugging Serial communication
+  Serial.begin(115200);
 
-  pinMode(2, OUTPUT); // ESP32 built-in LED pin
-  digitalWrite(2, LOW); // Turn off LED initially
+  // Initialize UART communication with Arduino
+  MySerial.begin(9600, SERIAL_8N1, 16, 17); // Baud rate: 9600, 8 data bits, no parity, 1 stop bit
 
-  // Connect to WiFi
-  Serial.println("\nConnecting to WiFi...");
-  WiFi.begin(ssid, password);
+  // Connect to WiFi using the FireBase32 library
+  db.wifi("Zain_H122_CB1E", "M6GJ2QEF53J"); // Replace with your WiFi SSID and Password
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
+  // Check Firebase connection status
 
-  TestReciveData();
-
-  Serial.println("\nWiFi connected.");
-  Serial.println("IP address: " + WiFi.localIP().toString());
-
-  server.begin();
+  // Initialize the built-in LED pin for feedback
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW); // Turn off the LED initially
 }
 
 void loop() {
-  WiFiClient client = server.available(); // Listen for incoming clients
+  // Handle commands from Firebase
+  handleFirebaseCommands();
 
-  if (client) {
-    Serial.println("New Client connected.");
-    String currentLine = "";
+  // Sync sensor data from Arduino to Firebase
+  syncArduinoDataToFirebase();
 
-    while (client.connected()) {
-      if (client.available()) {
-        char c = client.read();
-        Serial.write(c);
+  delay(100); // Add a delay to avoid spamming the loop
+}
 
-        if (c == '\n') {
-          if (currentLine.length() == 0) {
-            // Serve the HTML page
-            client.println("HTTP/1.1 200 OK");
-            client.println("Content-type:text/html");
-            client.println();
+// Function to handle commands from Firebase
+void handleFirebaseCommands() {
+  // Retrieve the command from the Firebase path `/control/command`
+  String firebaseCommand = "";
+  db.GetData("/control/command", &firebaseCommand);
 
-              // HTML content
-            client.println("<!DOCTYPE html>");
-            client.println("<html>");
-            client.println("<head>");
-            client.println("<title>ESP32 LED Control</title>");
-            client.println("<style>");
-            client.println("body {");
-            client.println("  display: flex;");
-            client.println("  flex-direction: column;");
-            client.println("  align-items: center;");
-            client.println("  justify-content: center;");
-            client.println("  min-height: 100vh;");
-            client.println("  margin: 0;");
-            client.println("  font-family: 'Arial', sans-serif;");
-            client.println("  background: linear-gradient(135deg, #74ebd5, #ACB6E5);");
-            client.println("  color: #333;");
-            client.println("}");
-            client.println("h1 {");
-            client.println("  margin-bottom: 20px;");
-            client.println("  font-size: 2.5rem;");
-            client.println("  color: #fff;");
-            client.println("}");
-            client.println("button {");
-            client.println("  padding: 15px 30px;");
-            client.println("  margin: 10px;");
-            client.println("  font-size: 1.2rem;");
-            client.println("  font-weight: bold;");
-            client.println("  color: #fff;");
-            client.println("  background: #4CAF50;");
-            client.println("  border: none;");
-            client.println("  border-radius: 8px;");
-            client.println("  cursor: pointer;");
-            client.println("  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);");
-            client.println("  transition: background 0.3s ease, transform 0.2s;");
-            client.println("}");
-            client.println("button:hover {");
-            client.println("  background: #45a049;");
-            client.println("  transform: translateY(-2px);");
-            client.println("}");
-            client.println("button:active {");
-            client.println("  transform: translateY(0);");
-            client.println("  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);");
-            client.println("}");
-            client.println("footer {");
-            client.println("  margin-top: 20px;");
-            client.println("  font-size: 0.9rem;");
-            client.println("  color: #eee;");
-            client.println("}");
-            client.println("</style>");
-            client.println("<script>");
-            client.println("function sendCommand(command) {");
-            client.println("  fetch(command).then(response => {");
-            client.println("    if (response.ok) {");
-            client.println("    } else {");
-            client.println("      alert('Failed to send command');");
-            client.println("    }");
-            client.println("  }).catch(error => alert('Error: ' + error));");
-            client.println("}");
-            client.println("</script>");
-            client.println("</head>");
-            client.println("<body>");
-            client.println("<h1>ESP32 LED Control</h1>");
-            client.println("<button onclick=\"sendCommand('/on')\">Turn ON</button>");
-            client.println("<button onclick=\"sendCommand('/off')\">Turn OFF</button>");
-            client.println("<footer>ESP32 LED Controller © 2024</footer>");
-            client.println("</body>");
-            client.println("</html>");
+  // If a command is found
+  if (firebaseCommand.length() > 0) {
+    Serial.println("Firebase Command: " + firebaseCommand); // Print the command
+    MySerial.println(firebaseCommand); // Forward the command to the Arduino via UART
 
-            break;
-          } else {
-            currentLine = "";
-          }
-        } else if (c != '\r') {
-          currentLine += c;
-        }
-
-        // Handle GET requests for /on and /off
-        if (currentLine.endsWith("GET /on")) {
-          Serial.println("Command received: LED_ON");
-          MySerial.println("LED_ON"); // Send command to Arduino
-
-          TEXT = MySerial.readStringUntil('\n'); // Read the incoming command
-          TEXT.trim(); // Remove any extra whitespace
-
-          Serial.print("The received command: ");
-          Serial.println(TEXT);
-
-          TestReciveData();
-        } else if (currentLine.endsWith("GET /off")) {
-          Serial.println("Command received: LED_OFF");
-          MySerial.println("LED_OFF"); // Send command to Arduino
-          TestReciveData();
-        }
-      }
+    // Handle the command locally (e.g., control an LED)
+    if (firebaseCommand == "LED_ON") {
+      digitalWrite(ledPin, HIGH); // Turn on the built-in LED
+    } else if (firebaseCommand == "LED_OFF") {
+      digitalWrite(ledPin, LOW); // Turn off the built-in LED
     }
-
-    // Close the connection
-    client.stop();
-    Serial.println("Client disconnected.");
   }
 }
 
-// if the data has been reseved the blue LED will blink
-void TestReciveData() {
-  digitalWrite(2, HIGH);
-  delay(100);
-  digitalWrite(2, LOW);
-  delay(100);
-  digitalWrite(2, HIGH);
-  delay(100);
-  digitalWrite(2, LOW);
+// Function to sync data from Arduino to Firebase
+void syncArduinoDataToFirebase() {
+  // Check if there is data available from the Arduino
+  if (MySerial.available()) {
+    // Read the incoming data from the Arduino
+    String receivedData = MySerial.readStringUntil('\n');
+    receivedData.trim(); // Remove any extra whitespace
 
+    // Write the received data to the Firebase path `/sensor/data`
+    //db.WriteData(receivedData.toInt(), "/sensor/data");
+    Serial.println("Sensor Data Synced: " + receivedData); // Print the synced data
+  }
 }
