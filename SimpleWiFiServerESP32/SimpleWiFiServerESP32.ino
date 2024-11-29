@@ -2,8 +2,8 @@
 #include <Firebase_ESP_Client.h>
 
 /* 1. Define the WiFi credentials */
-#define WIFI_SSID "Zain_H122_CB1E"
-#define WIFI_PASSWORD "M6GJ2QEF53J"
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
 
 /* 2. Define the API Key */
 #define API_KEY "AIzaSyB0S9NtzkxVAHmU3A-7zLnE3-yTbrPB4dY"
