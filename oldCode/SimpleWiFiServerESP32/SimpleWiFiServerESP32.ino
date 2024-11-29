@@ -1,71 +1,88 @@
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 
-// Firebase and WiFi configuration
+/* 1. Define the WiFi credentials */
+#define WIFI_SSID "Zain_H122_CB1E"
+#define WIFI_PASSWORD "M6GJ2QEF53J"
+
+/* 2. Define the API Key */
+#define API_KEY "AIzaSyB0S9NtzkxVAHmU3A-7zLnE3-yTbrPB4dY"
+
+/* 3. Define the RTDB URL */
+#define DATABASE_URL "https://espcontroller-dc45b-default-rtdb.firebaseio.com/" 
+
+/* 4. Define the user Email and password that alreadey registerd or added in your project */
+#define USER_EMAIL "abdulla38898@gmail.com"
+#define USER_PASSWORD "12345678"
+
+// Define Firebase Data object
 FirebaseData fbdo;
+
 FirebaseAuth auth;
 FirebaseConfig config;
 
-// WiFi Credentials
-const char* ssid = ""; // wifi name 
-const char* password = ""; //wifi password
+unsigned long sendDataPrevMillis = 0;
 
-// Firebase Configuration
-const char* firebase_host = "smatrhome-default-rtdb.firebaseio.com";
-const char* api_key = ""; //Add the api key
+const int ledPin = 2;
 
-// Pin Definitions
-const int ledPin = 2; // ESP32 built-in LED pin for feedback
-
-void setup() {
-  Serial.begin(115200);
-
-  // WiFi setup
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nConnected to WiFi.");
-  Serial.println("IP Address: " + WiFi.localIP().toString());
-
-  // Firebase setup
-  config.host = firebase_host;
-  config.api_key = api_key;
-
-  // Enable anonymous authentication
-  auth.user.email = "";
-  auth.user.password = "";
-
-  Firebase.begin(&config, &auth);
-  Firebase.reconnectWiFi(true);
-
-  // Setup LED pin
+void setup()
+{
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, LOW);
+
+  Serial.begin(115200);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  /* Assign the api key (required) */
+  config.api_key = API_KEY;
+
+  /* Assign the user sign in credentials */
+  auth.user.email = USER_EMAIL;
+  auth.user.password = USER_PASSWORD;
+
+  /* Assign the RTDB URL (required) */
+  config.database_url = DATABASE_URL;
+
+  // Comment or pass false value when WiFi reconnection will control by your code or third party library e.g. WiFiManager
+  Firebase.reconnectNetwork(true);
+
+  // Since v4.4.x, BearSSL engine was used, the SSL buffer need to be set.
+  // Large data transmission may require larger RX buffer, otherwise connection issue or data read time out can be occurred.
+  fbdo.setBSSLBufferSize(4096 /* Rx buffer size in bytes from 512 - 16384 */, 1024 /* Tx buffer size in bytes from 512 - 16384 */);
+
+  // Limit the size of response payload to be collected in FirebaseData
+  fbdo.setResponseSize(2048);
+
+  Firebase.begin(&config, &auth);
+
+  Firebase.setDoubleDigits(5);
+
+  config.timeout.serverResponse = 10 * 1000;
 }
 
-void loop() {
-  handleFirebaseCommands();
-  delay(100);
-}
+void loop()
+{
+  // Firebase.ready() should be called repeatedly to handle authentication tasks.
+  if (Firebase.ready() && (millis() - sendDataPrevMillis > 1000 || sendDataPrevMillis == 0))
+  {
+    sendDataPrevMillis = millis();
 
-void handleFirebaseCommands() {
-  if (Firebase.RTDB.getString(&fbdo, "/control/command")) {
-    String command = fbdo.stringData();
-    Serial.println("Command from Firebase: " + command);
-
-    if (command == "LED_ON") {
-      digitalWrite(ledPin, HIGH);
-      Serial.println("LED turned ON.");
-    } else if (command == "LED_OFF") {
-      digitalWrite(ledPin, LOW);
-      Serial.println("LED turned OFF.");
-    } else {
-      Serial.println("Unknown command.");
-    }
-  } else {
-    Serial.println("Failed to get command from Firebase: " + fbdo.errorReason());
+  int ledState;
+   if(Firebase.RTDB.getInt(&fbdo, "/led/state", &ledState)){
+    digitalWrite(ledPin, ledState);
+   }else{
+    Serial.println(fbdo.errorReason().c_str());
+   }
   }
 }
