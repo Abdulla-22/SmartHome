@@ -1,53 +1,91 @@
-/* General styles */
+/* General Styles */
 body {
     font-family: Arial, sans-serif;
-    text-align: center;
-    background-color: #f4f4f4;
+    background-color: #f5f5f5;
     margin: 0;
     padding: 0;
+    color: #333;
 }
 
 .container {
-    max-width: 600px;
-    margin: 50px auto;
+    max-width: 800px;
+    margin: 20px auto;
+    background-color: #fff;
     padding: 20px;
-    background: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
-    color: #333;
+h1, h2, h3 {
+    text-align: center;
+    color: #4CAF50;
     margin-bottom: 20px;
 }
 
+/* Section Styles */
+.section {
+    margin-bottom: 30px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.section h2 {
+    margin-bottom: 15px;
+    color: #333;
+    text-decoration: underline;
+}
+
+/* Controls Styling */
 .controls {
-    margin: 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
 }
 
 button {
-    padding: 15px 30px;
-    margin: 10px;
-    font-size: 16px;
-    font-weight: bold;
+    background-color: #4CAF50;
     color: #fff;
-    background-color: #007bff;
     border: none;
+    padding: 10px 15px;
     border-radius: 5px;
     cursor: pointer;
+    font-size: 16px;
     transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #45a049;
 }
 
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Sensor Display Styles */
 .sensor-display {
-    margin-top: 30px;
+    text-align: center;
+    margin-top: 15px;
     font-size: 18px;
 }
 
-#sensor-data {
-    font-size: 24px;
-    color: #007bff;
+.sensor-display p {
+    margin: 5px 0;
+    color: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .controls {
+        flex-direction: column;
+    }
+
+    button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
 }

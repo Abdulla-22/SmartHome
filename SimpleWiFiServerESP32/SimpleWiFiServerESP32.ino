@@ -24,6 +24,7 @@ FirebaseConfig config;
 unsigned long sendDataPrevMillis = 0;
 
 const int ledPin = 2;
+HardwareSerial ArduinoSerial(2);
 
 void setup()
 {
@@ -31,6 +32,7 @@ void setup()
   digitalWrite(ledPin, LOW);
 
   Serial.begin(115200);
+  ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   Serial.print("Connecting to Wi-Fi");
@@ -79,8 +81,17 @@ void loop()
     sendDataPrevMillis = millis();
 
   int ledState;
-   if(Firebase.RTDB.getInt(&fbdo, "/led/state", &ledState)){
+    // control the indor lighting
+   if(Firebase.RTDB.getInt(&fbdo, "/LightingSystem/InDoor", &ledState)){
     digitalWrite(ledPin, ledState);
+    if (ledState == 1) {
+      ArduinoSerial.println("IN_DOOR_LED_ON");
+
+    } else if (ledState == 0) {
+      ArduinoSerial.println("IN_DOOR_LED_OFF");
+
+    }
+    
    }else{
     Serial.println(fbdo.errorReason().c_str());
    }

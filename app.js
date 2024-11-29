@@ -16,33 +16,83 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Get references to Firebase paths
-// const commandRef = ref(database, "/control/command");
-const led = ref(database, "/led/state");
-// const sensorDataRef = ref(database, "/sensor/data");
+// Firebase Paths
+const indoorLedRef = ref(database, "/LightingSystem/InDoor");
+const outdoorLedRef = ref(database, "/LightingSystem/OutDoor");
+const gardenSoilRef = ref(database, "/GardenSystem/soilMoisture");
+const gardenTempRef = ref(database, "/GardenSystem/temperature");
+const envTempRef = ref(database, "/EnvironmentSystem/temperature");
+const envHumidityRef = ref(database, "/EnvironmentSystem/humidity");
+const motionSensorRef = ref(database, "/SecuritySystem/motion");
+const doorSensorRef = ref(database, "/SecuritySystem/door");
+const fanRef = ref(database, "/EnvironmentSystem/fan");
+const acRef = ref(database, "/EnvironmentSystem/ac");
+const alarmRef = ref(database, "/SecuritySystem/alarm");
 
 // UI Elements
-const ledOnButton = document.getElementById("led-on");
-const ledOffButton = document.getElementById("led-off");
-// const sensorDataElement = document.getElementById("sensor-data");
+// Lighting
+const indoorLedOnButton = document.getElementById("indoor-led-on");
+const indoorLedOffButton = document.getElementById("indoor-led-off");
+const outdoorLedOnButton = document.getElementById("outdoor-led-on");
+const outdoorLedOffButton = document.getElementById("outdoor-led-off");
+
+// Garden System
+const gardenSoilElement = document.getElementById("garden-soil-moisture");
+const gardenTempElement = document.getElementById("garden-temperature");
+
+// Environment Control
+const envTempElement = document.getElementById("env-temperature");
+const envHumidityElement = document.getElementById("env-humidity");
+const fanOnButton = document.getElementById("fan-on");
+const fanOffButton = document.getElementById("fan-off");
+const acOnButton = document.getElementById("ac-on");
+const acOffButton = document.getElementById("ac-off");
+
+// Security System
+const activateAlarmButton = document.getElementById("activate-alarm");
+const deactivateAlarmButton = document.getElementById("deactivate-alarm");
+const motionSensorElement = document.getElementById("motion-sensor-status");
+const doorSensorElement = document.getElementById("door-sensor-status");
 
 // Write command to Firebase
-const sendCommand = (command) => {
-    set(led, command)
-        .then(() => console.log(`Command "${command}" sent successfully.`))
+const sendCommand = (ref, command) => {
+    set(ref, command)
+        .then(() => console.log(`Command "${command}" sent successfully to ${ref.path.pieces_.join('/')}.`))
         .catch((error) => console.error("Error sending command:", error));
 };
 
-// Update the UI with sensor data
-// onValue(sensorDataRef, (snapshot) => {
-//     const data = snapshot.val();
-//     if (data !== null) {
-//         sensorDataElement.textContent = `Sensor Value: ${data}`;
-//     } else {
-//         sensorDataElement.textContent = "No data available";
-//     }
-// });
+// Update UI with real-time data
+const updateUI = (ref, element, label) => {
+    onValue(ref, (snapshot) => {
+        const data = snapshot.val();
+        if (data !== null) {
+            element.textContent = `${label}: ${data}`;
+        } else {
+            element.textContent = `${label}: No data available`;
+        }
+    });
+};
 
-// Add event listeners for buttons
-ledOnButton.addEventListener("click", () => sendCommand(1));
-ledOffButton.addEventListener("click", () => sendCommand(0));
+// Lighting Controls
+indoorLedOnButton.addEventListener("click", () => sendCommand(indoorLedRef, 1));
+indoorLedOffButton.addEventListener("click", () => sendCommand(indoorLedRef, 0));
+outdoorLedOnButton.addEventListener("click", () => sendCommand(outdoorLedRef, 1));
+outdoorLedOffButton.addEventListener("click", () => sendCommand(outdoorLedRef, 0));
+
+// Garden System Sensors
+updateUI(gardenSoilRef, gardenSoilElement, "Soil Moisture");
+updateUI(gardenTempRef, gardenTempElement, "Temperature");
+
+// Environment Control
+fanOnButton.addEventListener("click", () => sendCommand(fanRef, 1));
+fanOffButton.addEventListener("click", () => sendCommand(fanRef, 0));
+acOnButton.addEventListener("click", () => sendCommand(acRef, 1));
+acOffButton.addEventListener("click", () => sendCommand(acRef, 0));
+updateUI(envTempRef, envTempElement, "Temperature");
+updateUI(envHumidityRef, envHumidityElement, "Humidity");
+
+// Security System
+activateAlarmButton.addEventListener("click", () => sendCommand(alarmRef, 1));
+deactivateAlarmButton.addEventListener("click", () => sendCommand(alarmRef, 0));
+updateUI(motionSensorRef, motionSensorElement, "Motion Sensor");
+updateUI(doorSensorRef, doorSensorElement, "Door Sensor");
