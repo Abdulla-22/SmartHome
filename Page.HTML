@@ -17,52 +17,38 @@
 
         <!-- Self-Controlled Lighting -->
         <div class="section">
-            <h2>Self-Controlled Lighting</h2>
+            <h2>Lighting System</h2>
             <div class="controls">
                 <h3>Indoor LED</h3>
                 <button id="indoor-led-on">Turn Indoor LED ON</button>
                 <button id="indoor-led-off">Turn Indoor LED OFF</button>
                 <br>
                 <h3>Outdoor LED</h3>
-                <button id="outdoor-led-on">Turn Outdoor LED ON</button>
-                <button id="outdoor-led-off">Turn Outdoor LED OFF</button>
+                <button id="outdoor-light-auto">Enable Auto Control</button>
+                <button id="outdoor-light-manual">Disable Auto Control</button>
+                <br>
+                <!-- Outdoor LED Control -->
+                <h3>Outdoor LED Control</h3>
+                <div class="controls">
+                    <button id="outdoor-led-on">Turn Outdoor LED ON</button>
+                    <button id="outdoor-led-off">Turn Outdoor LED OFF</button>
+                </div>
             </div>
         </div>
 
-        <!-- Garden System -->
+        <!-- Smart Garden System -->
         <div class="section">
-            <h2>Garden System</h2>
+            <h2>Smart Garden System</h2>
             <div class="sensor-display">
                 <p id="garden-soil-moisture">Soil Moisture: Waiting for data...</p>
+                <p id="garden-rain-sensor">Rain: Waiting for data...</p>
                 <p id="garden-temperature">Temperature: Waiting for data...</p>
+                <p id="garden-humidity">Humidity: Waiting for data...</p>
             </div>
-        </div>
-
-        <!-- Environment Control -->
-        <div class="section">
-            <h2>Environment Control</h2>
-            <div class="sensor-display">
-                <p id="env-temperature">Temperature: Waiting for data...</p>
-                <p id="env-humidity">Humidity: Waiting for data...</p>
-            </div>
-            <div class="controls">
-                <button id="fan-on">Turn Fan ON</button>
-                <button id="fan-off">Turn Fan OFF</button>
-                <button id="ac-on">Turn AC ON</button>
-                <button id="ac-off">Turn AC OFF</button>
-            </div>
-        </div>
-
-        <!-- Security System -->
-        <div class="section">
-            <h2>Security System</h2>
-            <div class="controls">
-                <button id="activate-alarm">Activate Alarm</button>
-                <button id="deactivate-alarm">Deactivate Alarm</button>
-            </div>
-            <div class="sensor-display">
-                <p id="motion-sensor-status">Motion Sensor: Waiting for data...</p>
-                <p id="door-sensor-status">Door Sensor: Waiting for data...</p>
+            <div class="led-indicators">
+                <p>Water Status:</p>
+                <span id="green-led" class="led-off">Green LED</span>
+                <span id="red-led" class="led-off">Red LED</span>
             </div>
         </div>
     </div>

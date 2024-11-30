@@ -17,82 +17,68 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
 // Firebase Paths
-const indoorLedRef = ref(database, "/LightingSystem/InDoor");
-const outdoorLedRef = ref(database, "/LightingSystem/OutDoor");
-const gardenSoilRef = ref(database, "/GardenSystem/soilMoisture");
-const gardenTempRef = ref(database, "/GardenSystem/temperature");
-const envTempRef = ref(database, "/EnvironmentSystem/temperature");
-const envHumidityRef = ref(database, "/EnvironmentSystem/humidity");
-const motionSensorRef = ref(database, "/SecuritySystem/motion");
-const doorSensorRef = ref(database, "/SecuritySystem/door");
-const fanRef = ref(database, "/EnvironmentSystem/fan");
-const acRef = ref(database, "/EnvironmentSystem/ac");
-const alarmRef = ref(database, "/SecuritySystem/alarm");
+const indoorLedRef = ref(database, "/LightingSystem/Indoor/State");
+const outdoorLightAutoRef = ref(database, "/LightingSystem/Outdoor/Auto");
+const outdoorLedRef = ref(database, "/LightingSystem/Outdoor/State");
+const gardenSoilRef = ref(database, "/GardenSystem/SoilMoisture");
+const gardenRainRef = ref(database, "/GardenSystem/Rain");
+const gardenTempRef = ref(database, "/GardenSystem/Temperature");
+const gardenHumidityRef = ref(database, "/GardenSystem/Humidity");
 
 // UI Elements
 // Lighting
 const indoorLedOnButton = document.getElementById("indoor-led-on");
 const indoorLedOffButton = document.getElementById("indoor-led-off");
+const outdoorLightAutoButton = document.getElementById("outdoor-light-auto");
+const outdoorLightManualButton = document.getElementById("outdoor-light-manual");
 const outdoorLedOnButton = document.getElementById("outdoor-led-on");
 const outdoorLedOffButton = document.getElementById("outdoor-led-off");
 
 // Garden System
 const gardenSoilElement = document.getElementById("garden-soil-moisture");
+const gardenRainElement = document.getElementById("garden-rain-sensor");
 const gardenTempElement = document.getElementById("garden-temperature");
+const gardenHumidityElement = document.getElementById("garden-humidity");
+const greenLedElement = document.getElementById("green-led");
+const redLedElement = document.getElementById("red-led");
 
-// Environment Control
-const envTempElement = document.getElementById("env-temperature");
-const envHumidityElement = document.getElementById("env-humidity");
-const fanOnButton = document.getElementById("fan-on");
-const fanOffButton = document.getElementById("fan-off");
-const acOnButton = document.getElementById("ac-on");
-const acOffButton = document.getElementById("ac-off");
-
-// Security System
-const activateAlarmButton = document.getElementById("activate-alarm");
-const deactivateAlarmButton = document.getElementById("deactivate-alarm");
-const motionSensorElement = document.getElementById("motion-sensor-status");
-const doorSensorElement = document.getElementById("door-sensor-status");
-
-// Write command to Firebase
-const sendCommand = (ref, command) => {
-    set(ref, command)
-        .then(() => console.log(`Command "${command}" sent successfully to ${ref.path.pieces_.join('/')}.`))
-        .catch((error) => console.error("Error sending command:", error));
+// Utility Functions
+const toggleLed = (element, state, color) => {
+    element.className = state ? `led-on-${color}` : "led-off";
 };
 
 // Update UI with real-time data
-const updateUI = (ref, element, label) => {
+const updateUI = (ref, element, label, transformFn) => {
     onValue(ref, (snapshot) => {
         const data = snapshot.val();
-        if (data !== null) {
-            element.textContent = `${label}: ${data}`;
-        } else {
-            element.textContent = `${label}: No data available`;
-        }
+        const displayValue = transformFn ? transformFn(data) : data;
+        element.textContent = `${label}: ${displayValue}`;
     });
 };
 
 // Lighting Controls
-indoorLedOnButton.addEventListener("click", () => sendCommand(indoorLedRef, 1));
-indoorLedOffButton.addEventListener("click", () => sendCommand(indoorLedRef, 0));
-outdoorLedOnButton.addEventListener("click", () => sendCommand(outdoorLedRef, 1));
-outdoorLedOffButton.addEventListener("click", () => sendCommand(outdoorLedRef, 0));
+indoorLedOnButton.addEventListener("click", () => set(indoorLedRef, 1));
+indoorLedOffButton.addEventListener("click", () => set(indoorLedRef, 0));
+outdoorLightAutoButton.addEventListener("click", () => set(outdoorLightAutoRef, true));
+outdoorLightManualButton.addEventListener("click", () => set(outdoorLightAutoRef, false));
+outdoorLedOnButton.addEventListener("click", () => set(outdoorLedRef, 1));
+outdoorLedOffButton.addEventListener("click", () => set(outdoorLedRef, 0));
 
 // Garden System Sensors
 updateUI(gardenSoilRef, gardenSoilElement, "Soil Moisture");
+updateUI(gardenRainRef, gardenRainElement, "Rain", (data) => (data ? "Yes" : "No"));
 updateUI(gardenTempRef, gardenTempElement, "Temperature");
+updateUI(gardenHumidityRef, gardenHumidityElement, "Humidity");
+updateUI(outdoorLedRef, gardenRainElement, "Outdoor LED", (data) => (data === 1 ? "ON" : "OFF"));
 
-// Environment Control
-fanOnButton.addEventListener("click", () => sendCommand(fanRef, 1));
-fanOffButton.addEventListener("click", () => sendCommand(fanRef, 0));
-acOnButton.addEventListener("click", () => sendCommand(acRef, 1));
-acOffButton.addEventListener("click", () => sendCommand(acRef, 0));
-updateUI(envTempRef, envTempElement, "Temperature");
-updateUI(envHumidityRef, envHumidityElement, "Humidity");
-
-// Security System
-activateAlarmButton.addEventListener("click", () => sendCommand(alarmRef, 1));
-deactivateAlarmButton.addEventListener("click", () => sendCommand(alarmRef, 0));
-updateUI(motionSensorRef, motionSensorElement, "Motion Sensor");
-updateUI(doorSensorRef, doorSensorElement, "Door Sensor");
+// Update LEDs for garden system
+onValue(gardenSoilRef, (snapshot) => {
+    const soilMoisture = snapshot.val();
+    if (soilMoisture !== null) {
+        const rain = gardenRainElement.textContent.includes("Yes");
+        const greenState = soilMoisture > 400 || rain; // Assume 400 as soil moisture threshold
+        const redState = !greenState;
+        toggleLed(greenLedElement, greenState, "green");
+        toggleLed(redLedElement, redState, "red");
+    }
+});

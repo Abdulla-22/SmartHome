@@ -1,99 +1,119 @@
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 
-/* 1. Define the WiFi credentials */
+/* Wi-Fi and Firebase credentials */
 #define WIFI_SSID "Zain_H122_CB1E"
 #define WIFI_PASSWORD "M6GJ2QEF53J"
-
-/* 2. Define the API Key */
 #define API_KEY "AIzaSyB0S9NtzkxVAHmU3A-7zLnE3-yTbrPB4dY"
-
-/* 3. Define the RTDB URL */
-#define DATABASE_URL "https://espcontroller-dc45b-default-rtdb.firebaseio.com/" 
-
-/* 4. Define the user Email and password that alreadey registerd or added in your project */
+#define DATABASE_URL "https://espcontroller-dc45b-default-rtdb.firebaseio.com/"
 #define USER_EMAIL "abdulla38898@gmail.com"
 #define USER_PASSWORD "12345678"
 
-// Define Firebase Data object
+// Firebase objects
 FirebaseData fbdo;
-
 FirebaseAuth auth;
 FirebaseConfig config;
 
-unsigned long sendDataPrevMillis = 0;
+// Serial communication
+HardwareSerial ArduinoSerial(2);  // Define Arduino Serial object
 
-const int ledPin = 2;
-HardwareSerial ArduinoSerial(2);
+// Variables for lighting control
+bool outdoorLightAuto = true;
+int outdoorLightState = 0;
+int indoorLightState = 0;
 
-void setup()
-{
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
+// Function prototypes
+void initializeWiFi();
+void initializeFirebase();
+void sendCommandToArduino(const String &command);
+void handleLightingSystem();
+void logSensorDataFromArduino();
 
+void setup() {
+  // Initialize Serial communication
   Serial.begin(115200);
-  ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17);  // Use GPIO16 (RX) and GPIO17 (TX)
 
-  Serial.print("Connecting to Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(300);
-  }
-  Serial.println();
-  Serial.print("Connected with IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
+  // Initialize Wi-Fi and Firebase
+  initializeWiFi();
+  initializeFirebase();
 
-  /* Assign the api key (required) */
-  config.api_key = API_KEY;
-
-  /* Assign the user sign in credentials */
-  auth.user.email = USER_EMAIL;
-  auth.user.password = USER_PASSWORD;
-
-  /* Assign the RTDB URL (required) */
-  config.database_url = DATABASE_URL;
-
-  // Comment or pass false value when WiFi reconnection will control by your code or third party library e.g. WiFiManager
-  Firebase.reconnectNetwork(true);
-
-  // Since v4.4.x, BearSSL engine was used, the SSL buffer need to be set.
-  // Large data transmission may require larger RX buffer, otherwise connection issue or data read time out can be occurred.
-  fbdo.setBSSLBufferSize(4096 /* Rx buffer size in bytes from 512 - 16384 */, 1024 /* Tx buffer size in bytes from 512 - 16384 */);
-
-  // Limit the size of response payload to be collected in FirebaseData
-  fbdo.setResponseSize(2048);
-
-  Firebase.begin(&config, &auth);
-
-  Firebase.setDoubleDigits(5);
-
-  config.timeout.serverResponse = 10 * 1000;
+  Serial.println("Setup complete.");
 }
 
-void loop()
-{
-  // Firebase.ready() should be called repeatedly to handle authentication tasks.
-  if (Firebase.ready() && (millis() - sendDataPrevMillis > 1000 || sendDataPrevMillis == 0))
-  {
-    sendDataPrevMillis = millis();
+void loop() {
+  if (Firebase.ready()) {
+    // Handle lighting system logic
+    handleLightingSystem();
 
-  int ledState;
-    // control the indor lighting
-   if(Firebase.RTDB.getInt(&fbdo, "/LightingSystem/InDoor", &ledState)){
-    digitalWrite(ledPin, ledState);
-    if (ledState == 1) {
-      ArduinoSerial.println("IN_DOOR_LED_ON");
+    // Log sensor data from Arduino
+    logSensorDataFromArduino();
+  }
 
-    } else if (ledState == 0) {
-      ArduinoSerial.println("IN_DOOR_LED_OFF");
+  delay(300);  // Delay for smoother operation
+}
 
+/* Function Definitions */
+
+// Initialize Wi-Fi connection
+void initializeWiFi() {
+  Serial.print("Connecting to Wi-Fi...");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to Wi-Fi");
+}
+
+// Initialize Firebase connection
+void initializeFirebase() {
+  config.api_key = API_KEY;
+  auth.user.email = USER_EMAIL;
+  auth.user.password = USER_PASSWORD;
+  config.database_url = DATABASE_URL;
+  Firebase.begin(&config, &auth);
+
+  Serial.println("Firebase initialized");
+}
+
+// Send a command to Arduino
+void sendCommandToArduino(const String &command) {
+  ArduinoSerial.println(command);                 // Send the command to Arduino
+  Serial.println("Sent to Arduino: " + command);  // Debug log
+}
+
+// Handle lighting system logic
+void handleLightingSystem() {
+  // Get outdoor lighting auto-control state
+  if (Firebase.RTDB.getBool(&fbdo, "/LightingSystem/Outdoor/Auto", &outdoorLightAuto)) {
+    sendCommandToArduino(outdoorLightAuto ? "OUT_DOOR_LIGHT_AUTO:1" : "OUT_DOOR_LIGHT_AUTO:0");
+  }
+
+  // Get outdoor lighting state
+  if (Firebase.RTDB.getInt(&fbdo, "/LightingSystem/Outdoor/State", &outdoorLightState)) {
+    sendCommandToArduino("OUT_DOOR_LIGHT_STATE:" + String(outdoorLightState));
+  }
+
+  // Get indoor lighting state
+  if (Firebase.RTDB.getInt(&fbdo, "/LightingSystem/Indoor/State", &indoorLightState)) {
+    sendCommandToArduino("IN_DOOR_LIGHT_STATE:" + String(indoorLightState));
+  }
+}
+
+// Log sensor data from Arduino
+void logSensorDataFromArduino() {
+  while (ArduinoSerial.available()) {
+    String incomingData = ArduinoSerial.readStringUntil('\n');
+
+    if (incomingData.startsWith("TEMP:")) {
+      int temp = incomingData.substring(5).toInt();
+      Firebase.RTDB.setInt(&fbdo, "/GardenSystem/Temperature", temp);
+      Serial.println("Temperature logged: " + String(temp));
+    } else if (incomingData.startsWith("HUMIDITY:")) {
+      int humidity = incomingData.substring(9).toInt();
+      Firebase.RTDB.setInt(&fbdo, "/GardenSystem/Humidity", humidity);
+      Serial.println("Humidity logged: " + String(humidity));
     }
-    
-   }else{
-    Serial.println(fbdo.errorReason().c_str());
-   }
   }
 }
