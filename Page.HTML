@@ -15,40 +15,63 @@
     <div class="container">
         <h1>Smart Home Control Panel</h1>
 
-        <!-- Self-Controlled Lighting -->
+        <!-- Lighting System -->
         <div class="section">
             <h2>Lighting System</h2>
+            <!-- Indoor LED Auto Control -->
+            <h3>Indoor LED Auto Control</h3>
             <div class="controls">
-                <h3>Indoor LED</h3>
+                <button id="indoor-light-auto">Enable Auto Control</button>
+                <button id="indoor-light-manual">Disable Auto Control</button>
+            </div>
+            <!-- Indoor LED Control -->
+            <h3>Indoor LED Control</h3>
+            <div class="controls">
                 <button id="indoor-led-on">Turn Indoor LED ON</button>
                 <button id="indoor-led-off">Turn Indoor LED OFF</button>
-                <br>
-                <h3>Outdoor LED</h3>
+            </div>
+            <!-- Outdoor LED Auto Control -->
+            <h3>Outdoor LED Auto Control</h3>
+            <div class="controls">
                 <button id="outdoor-light-auto">Enable Auto Control</button>
                 <button id="outdoor-light-manual">Disable Auto Control</button>
-                <br>
-                <!-- Outdoor LED Control -->
-                <h3>Outdoor LED Control</h3>
-                <div class="controls">
-                    <button id="outdoor-led-on">Turn Outdoor LED ON</button>
-                    <button id="outdoor-led-off">Turn Outdoor LED OFF</button>
-                </div>
+            </div>
+            <!-- Outdoor LED Control -->
+            <h3>Outdoor LED Control</h3>
+            <div class="controls">
+                <button id="outdoor-led-on">Turn Outdoor LED ON</button>
+                <button id="outdoor-led-off">Turn Outdoor LED OFF</button>
             </div>
         </div>
 
-        <!-- Smart Garden System -->
+        <!-- Garden System -->
         <div class="section">
             <h2>Smart Garden System</h2>
             <div class="sensor-display">
                 <p id="garden-soil-moisture">Soil Moisture: Waiting for data...</p>
                 <p id="garden-rain-sensor">Rain: Waiting for data...</p>
-                <p id="garden-temperature">Temperature: Waiting for data...</p>
-                <p id="garden-humidity">Humidity: Waiting for data...</p>
             </div>
             <div class="led-indicators">
                 <p>Water Status:</p>
                 <span id="green-led" class="led-off">Green LED</span>
                 <span id="red-led" class="led-off">Red LED</span>
+            </div>
+        </div>
+
+        <!-- Security System -->
+        <div class="section">
+            <h2>Security System</h2>
+            <!-- Arming and Disarming -->
+            <h3>Arming Control</h3>
+            <div class="controls">
+                <button id="arm-security">Arm Security</button>
+                <button id="disarm-security">Disarm Security</button>
+            </div>
+            <!-- Access Control -->
+            <h3>Access Control</h3>
+            <div class="sensor-display">
+                <p id="security-status">Status: Waiting for data...</p>
+                <p id="last-access">Last Access: None</p>
             </div>
         </div>
     </div>

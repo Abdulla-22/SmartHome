@@ -19,14 +19,14 @@ const int greenLedPin = 10; // Green LED pin for access granted
 const int buzzerPin = 11;   // Buzzer pin for alarm
 
 // Pin definitions for Smart Environment Control
-const int tempSensorPin = A3;   // Temperature sensor pin
-const int acGreenLedPin = 12;   // Green LED for air conditioner ON
-const int acRedLedPin = 13;     // Red LED for air conditioner OFF
+const int tempSensorPin = A3; // Temperature sensor pin
+const int acGreenLedPin = 12; // Green LED for air conditioner ON
+const int acRedLedPin = 13;   // Red LED for air conditioner OFF
 
 // Pin definitions for Garbage Basket System
-const int trigPin = 2;          // Ultrasonic sensor trigger pin
-const int echoPin = 4;          // Ultrasonic sensor echo pin
-Servo garbageServo;             // Servo motor object
+const int trigPin = 2;           // Ultrasonic sensor trigger pin
+const int echoPin = 4;           // Ultrasonic sensor echo pin
+Servo garbageServo;              // Servo motor object
 const int garbageOpenAngle = 90; // Servo angle to open the basket
 const int garbageCloseAngle = 0; // Servo angle to close the basket
 const int garbageThreshold = 20; // Distance threshold in cm to open the basket
@@ -51,14 +51,15 @@ byte colPins[COLS] = {6, 7, 8, 9}; // Connect keypad COL0, COL1, COL2, COL3 to t
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 // Variables for states
-unsigned long lastClapTime = 0; // Time of the last detected clap
-bool outdoorLightAuto = true;   // Automatic control for outdoor lighting
-bool indoorLightAuto = true;    // Automatic control for indoor lighting
-bool indoorLightState = false;  // Indoor light state (on/off)
-bool outdoorLightState = false; // Outdoor light state (on/off)
-bool gardenAutoMode = true;     // Automatic mode for the garden system
-bool securityArmed = true;      // Security system armed mode
+unsigned long lastClapTime = 0;  // Time of the last detected clap
+bool outdoorLightAuto = true;    // Automatic control for outdoor lighting
+bool indoorLightAuto = true;     // Automatic control for indoor lighting
+bool indoorLightState = false;   // Indoor light state (on/off)
+bool outdoorLightState = false;  // Outdoor light state (on/off)
+bool gardenAutoMode = true;      // Automatic mode for the garden system
+bool securityArmed = true;       // Security system armed mode
 bool environmentAutoMode = true; // Automatic mode for environment system
+bool acBOOL = false;
 
 // Buffer for keypad input
 String enteredPassword = "";
@@ -92,7 +93,7 @@ void setup()
   // Garbage basket system pin configurations
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
-  garbageServo.attach(3); // Attach servo to pin 3
+  garbageServo.attach(3);                // Attach servo to pin 3
   garbageServo.write(garbageCloseAngle); // Ensure basket is closed at startup
 
   // Turn off all actuators at startup
@@ -210,6 +211,16 @@ void processESP32Data(String command)
       securityArmed = (intValue == 1);
       Serial.println(securityArmed ? "Security system armed." : "Security system disarmed.");
     }
+    else if (tag == "ENVIRONMENT_AUTO_MODE") 
+    {
+      environmentAutoMode = (intValue == 1);
+      Serial.println(environmentAutoMode ? "environment system auto." : "environment system manally.");
+    }
+    else if (tag == "ENVIRONMENT_AC_MODE") 
+    {
+      acBOOL = (intValue == 1);
+      Serial.println(acBOOL ? "environment system AC on." : "environment system AC off.");
+    }
     else
     {
       Serial.println("Unknown tag: " + tag);
@@ -259,7 +270,7 @@ void handleSecuritySystem()
     {
       digitalWrite(redLedPin, HIGH);
       digitalWrite(buzzerPin, HIGH);
-      sendDataToESP("SECURITY:ALARM");
+      sendDataToESP("SECURITY:1");
     }
     else
     {
@@ -333,7 +344,8 @@ void handleGardenSystem()
 }
 
 // Handle garbage basket system
-void handleGarbageBasketSystem() {
+void handleGarbageBasketSystem()
+{
   // Measure distance using ultrasonic sensor
   long duration, distance;
   digitalWrite(trigPin, LOW);
@@ -345,33 +357,43 @@ void handleGarbageBasketSystem() {
   distance = duration * 0.034 / 2;
 
   // Open or close basket based on distance
-  if (distance > 0 && distance < garbageThreshold) {
+  if (distance > 0 && distance < garbageThreshold)
+  {
     garbageServo.write(garbageOpenAngle);
     Serial.println("Basket Opened.");
-  } else {
+  }
+  else
+  {
     garbageServo.write(garbageCloseAngle);
     Serial.println("Basket Closed.");
   }
 }
 
-// Handle environment control
+// Handle environment control based on temperature
 void handleEnvironmentControl() {
   if (environmentAutoMode) {
-    int temperature = analogRead(tempSensorPin) / 10; // Simulate temperature in °C
+    // Simulate reading temperature from the sensor (in this case, analogRead)
+    int rawTemperature = analogRead(tempSensorPin);  // Read temperature from sensor
+    int temperature = map(rawTemperature, 0, 1023, -40, 125); // Map sensor value to temperature range (-40 to 125°C)
 
-    // Control air conditioner with LEDs
+    // Check if temperature exceeds the threshold and control the air conditioner (AC)
     if (temperature > tempThreshold) {
-      digitalWrite(acGreenLedPin, HIGH);
-      digitalWrite(acRedLedPin, LOW);
+      digitalWrite(acGreenLedPin, HIGH); // Turn on the green LED (AC ON)
+      digitalWrite(acRedLedPin, LOW);    // Turn off the red LED (AC OFF)
       Serial.println("Air Conditioner ON.");
     } else {
-      digitalWrite(acGreenLedPin, LOW);
-      digitalWrite(acRedLedPin, HIGH);
+      digitalWrite(acGreenLedPin, LOW);  // Turn off the green LED (AC OFF)
+      digitalWrite(acRedLedPin, HIGH);   // Turn on the red LED (AC ON)
       Serial.println("Air Conditioner OFF.");
     }
 
-    // Send data to ESP32 for monitoring
+    // Send temperature data to ESP32 for monitoring
     sendDataToESP("TEMPERATURE:" + String(temperature));
+  } 
+  else {
+    // If not in auto mode, we can disable the LEDs or take other actions
+    digitalWrite(acGreenLedPin, acBOOL);
+    digitalWrite(acRedLedPin, !acBOOL);
   }
 }
 
