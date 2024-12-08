@@ -1,6 +1,7 @@
 #include <DHT.h>
 #include <DHT_U.h>
-
+#include <ESP32Servo.h> // Include ESP32Servo library
+#include <AccelStepper.h>
 #include <WiFi.h>
 #include <Firebase_ESP_Client.h>
 
@@ -23,12 +24,28 @@ FirebaseConfig config;
 // Serial communication with Arduino
 HardwareSerial ArduinoSerial(2); // Serial2 (ESP32 UART communication)
 
+// Stepper Motor pins and configuration for garage system
+#define IN1 4
+#define IN2 5
+#define IN3 22
+#define IN4 23
+AccelStepper garageMotor(8, IN1, IN3, IN2, IN4); // Use 8 for HALFSTEP mode
+bool garageOpen = false; // Garage open/close state
+
 DHT dht(DHTPIN, DHTTYPE);        // Initialize the DHT sensor
 bool environmentAutoMode = true; // Automatic environment control mode
 const int tempThreshold = 30;    // Temperature threshold for AC in °C
 bool acBOOL = false;             // Manual AC control state
 const int acGreenLedPin = 14;    // Green LED for AC ON
 const int acRedLedPin = 12;      // Red LED for AC OFF
+
+// Garbage Basket System pins
+const int trigPin = 18;          // Ultrasonic sensor trigger pin
+const int echoPin = 19;          // Ultrasonic sensor echo pin
+const int servoPin = 21;         // Servo motor pin for basket
+const int garbageThreshold = 20; // Distance threshold to open the basket (in cm)
+// Servo object
+Servo garbageServo;
 
 // Sensor pins connected to ESP32
 const int ldrPin = 34;         // LDR sensor for outdoor lighting
@@ -57,9 +74,19 @@ void setup()
   Serial.begin(115200);                          // Debugging
   ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17); // Communication with Arduino
 
+  // Garage system setup
+  garageMotor.setMaxSpeed(1000);    // Maximum speed in steps per second
+  garageMotor.setAcceleration(500); // Acceleration in steps per second^2
+
   dht.begin(); // Initialize DHT11 sensor
   pinMode(acGreenLedPin, OUTPUT);
   pinMode(acRedLedPin, OUTPUT);
+
+  // Initialize garbage basket pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  garbageServo.attach(servoPin);
+  garbageServo.write(0); // Close the basket initially
 
   // Turn off LEDs initially
   digitalWrite(acGreenLedPin, LOW);
@@ -110,8 +137,48 @@ void loop()
 
   handleEnvironmentControl();
 
+  handleGarbageBasketSystem();
+
+  handleGarageDoor();
+
   // Handle communication with Arduino
   handleArduinoCommunication();
+}
+
+int getBasketDistance()
+{
+  long duration;
+  int distance;
+
+  // Trigger the ultrasonic sensor
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Measure distance
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2; // Convert to cm
+  Serial.println("The Des: " + String(distance));
+  return distance;
+}
+
+void handleGarbageBasketSystem()
+{
+  int distance = getBasketDistance();
+
+  if (distance > 0 && distance < garbageThreshold)
+  {
+    delay(1000);
+    garbageServo.write(90); // Open the basket
+    Serial.println("Basket Opened.");
+  }
+  else
+  {
+    garbageServo.write(0); // Close the basket
+    Serial.println("Basket Closed.");
+  }
 }
 
 // Function to read sensor data and log it to Firebase (not used)
@@ -141,6 +208,8 @@ void readDB()
 
   Firebase.RTDB.getBool(&fbdo, "/EnvironmentSystem/Auto", &environmentAutoMode);
   Firebase.RTDB.getBool(&fbdo, "/EnvironmentSystem/ManualAC", &acBOOL);
+  // Read the garage door open/close status
+  Firebase.RTDB.getBool(&fbdo, "/EnvironmentSystem/GarageSystemStute", &garageOpen);
 }
 
 void handleLightingSystem()
@@ -321,6 +390,30 @@ void handleEnvironmentControl()
   if (!Firebase.RTDB.setBool(&fbdo, "/EnvironmentSystem/ACState", digitalRead(acGreenLedPin) == HIGH))
   {
     Serial.println("Failed to log AC State: " + fbdo.errorReason());
+  }
+}
+
+void handleGarageDoor()
+{
+  if (garageOpen)
+  {
+    Serial.println("Opening Garage Door...");
+    garageMotor.moveTo(10240); // Move forward (open position) 1rev = 2048
+    while (garageMotor.distanceToGo() != 0)
+    {
+      garageMotor.run();
+    }
+    delay(500); // Stabilize after reaching position
+  }
+  else
+  {
+    Serial.println("Closing Garage Door...");
+    garageMotor.moveTo(0); // Move backward (closed position)
+    while (garageMotor.distanceToGo() != 0)
+    {
+      garageMotor.run();
+    }
+    delay(500); // Stabilize after reaching position
   }
 }
 
