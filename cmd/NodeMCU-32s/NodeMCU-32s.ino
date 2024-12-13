@@ -65,6 +65,8 @@ int indoorLightState = false;  // Indoor lighting state (on/off)
 const int ldrThreshold = 500;  // Threshold for LDR sensor (adjust as needed)
 const int soundThreshold = 25; // Threshold for sound sensor (adjust as needed)
 
+int ArmedMode = 0;
+
 const int moistureThreshold = 2800;
 bool WaterPump = false;
 bool gardenAutoMode = true;
@@ -210,6 +212,10 @@ void readDB()
   Firebase.RTDB.getBool(&fbdo, "/EnvironmentSystem/ManualAC", &acBOOL);
   // Read the garage door open/close status
   Firebase.RTDB.getBool(&fbdo, "/EnvironmentSystem/GarageSystemStute", &garageOpen);
+
+  // Security System mode
+  Firebase.RTDB.getBool(&fbdo, "/SecuritySystem/Armed", &ArmedMode);
+
 }
 
 void handleLightingSystem()
@@ -317,7 +323,7 @@ void handleGardenSystem()
   }
   else
   {
-    Firebase.RTDB.getBool(&fbdo, "/GardenSystem/WaterPump", &WaterPump);
+    // Firebase.RTDB.getBool(&fbdo, "/GardenSystem/WaterPump", &WaterPump);
 
     if (WaterPump)
     {
@@ -440,5 +446,9 @@ void processArduinoCommand(String command)
   else if (command.startsWith("SECURITY:"))
   {
     Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Alarm", (command.substring(9).toInt()));
+  }
+  else if (command.startsWith("SECURITY_ARMED:")) 
+  {
+    Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Armed", (command.substring(15).toInt()));
   }
 }

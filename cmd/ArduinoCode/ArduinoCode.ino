@@ -1,28 +1,18 @@
 #include <Keypad.h>
-#include <Servo.h>
 #include <Wire.h>
-#include <Adafruit_VL53L0X.h> // Library for VL53L0X
-
-// Create VL53L0X object
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 // Pin definitions
-const int servoPin = 3;       // Servo motor pin
-const int buzzerPin = 5;      // Buzzer pin
-const int pirSensorPin = 4;   // PIR motion sensor pin
-const int redLedPin = 2;      // Red LED pin for alarm
-const int greenLedPin = 13;   // Green LED pin for access granted
-
-// Garbage basket system
-Servo garbageServo;
-const int garbageOpenAngle = 90; // Servo angle to open the basket
-const int garbageCloseAngle = 0; // Servo angle to close the basket
-const int garbageThreshold = 20; // Distance threshold in cm to open the basket
+const int buzzerPin = 5;       // Buzzer pin
+const int pirSensorPin = 4;    // PIR motion sensor pin
+const int vibrationSensorPin = 3; // Vibration sensor pin
+const int redLedPin = 2;       // Red LED pin for alarm
+const int greenLedPin = 13;    // Green LED pin for access granted
 
 // Security system
 const String correctPassword = "1234";
 String enteredPassword = "";
-bool securityArmed = false;
+bool securityArmed = true;
+int counter = 0;
 
 // Keypad setup
 const byte ROWS = 4;
@@ -41,19 +31,8 @@ void setup()
   Serial.begin(9600);
   Wire.begin();
 
-  // Initialize VL53L0X sensor
-  if (!lox.begin())
-  {
-    Serial.println("Failed to boot VL53L0X sensor!");
-    while (1);
-  }
-  Serial.println("VL53L0X sensor initialized.");
-
-  // Initialize servo and LEDs
-  garbageServo.attach(servoPin);
-  garbageServo.write(garbageCloseAngle);
-
   pinMode(pirSensorPin, INPUT);
+  pinMode(vibrationSensorPin, INPUT); // Set vibration sensor pin as input
   pinMode(redLedPin, OUTPUT);
   pinMode(greenLedPin, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
@@ -70,7 +49,6 @@ void loop()
   if (key)
     handleKeypadInput(key);
 
-  handleGarbageBasketSystem();
   handleSecuritySystem();
 
   if (Serial.available())
@@ -80,48 +58,31 @@ void loop()
   }
 }
 
-// Function to handle garbage basket system
-void handleGarbageBasketSystem()
-{
-  VL53L0X_RangingMeasurementData_t measure;
-
-  // Read distance from VL53L0X sensor
-  lox.rangingTest(&measure, false);
-
-  if (measure.RangeStatus != 4) // If valid reading
-  {
-    long distance = measure.RangeMilliMeter / 10; // Convert mm to cm
-    Serial.print("Distance: ");
-    Serial.print(distance);
-    Serial.println(" cm");
-
-    // Open or close the basket based on distance
-    if (distance > 0 && distance < garbageThreshold)
-    {
-      garbageServo.write(garbageOpenAngle);
-      Serial.println("Basket Opened.");
-    }
-    else
-    {
-      garbageServo.write(garbageCloseAngle);
-      Serial.println("Basket Closed.");
-    }
-  }
-  else
-  {
-    Serial.println("Out of range");
-  }
-}
-
 // Function to handle security system
 void handleSecuritySystem()
 {
+  if (counter > 3) 
+  {
+    securityArmed = true;
+  }
   if (securityArmed)
   {
     int motionDetected = digitalRead(pirSensorPin);
-    digitalWrite(redLedPin, motionDetected);
-    digitalWrite(buzzerPin, motionDetected);
-    sendToESP32("SECURITY:" + String(motionDetected));
+    int vibrationDetected = digitalRead(vibrationSensorPin);
+
+    // Trigger alarm if motion or vibration is detected
+    if (motionDetected || vibrationDetected)
+    {
+      digitalWrite(redLedPin, HIGH);
+      digitalWrite(buzzerPin, HIGH);
+      sendToESP32("SECURITY: Motion or Vibration detected");
+      delay(500); // Alarm delay
+    }
+    else
+    {
+      // digitalWrite(redLedPin, LOW);
+      // digitalWrite(buzzerPin, LOW);
+    }
   }
 }
 
@@ -134,11 +95,14 @@ void handleKeypadInput(char key)
   {
     if (enteredPassword == correctPassword)
     {
+      digitalWrite(redLedPin, LOW);
+      digitalWrite(buzzerPin, LOW);
       Serial.println("Access granted.");
       digitalWrite(greenLedPin, HIGH);
       delay(1000);
       digitalWrite(greenLedPin, LOW);
       securityArmed = false;
+      counter = 0;
     }
     else
     {
@@ -148,6 +112,7 @@ void handleKeypadInput(char key)
       delay(1000);
       digitalWrite(redLedPin, LOW);
       digitalWrite(buzzerPin, LOW);
+      counter++;
     }
     enteredPassword = "";
   }

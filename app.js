@@ -27,6 +27,15 @@ const gardenSoilRef = ref(database, "/GardenSystem/SoilMoisture");
 const gardenRainRef = ref(database, "/GardenSystem/Rain");
 const gardenTempRef = ref(database, "/GardenSystem/Temperature");
 const gardenHumidityRef = ref(database, "/GardenSystem/Humidity");
+const GarageSystemStuteRef = ref(database, "/EnvironmentSystem/GarageSystemStute");
+const EnvironmentSystemStuteRef = ref(database, "/EnvironmentSystem/Auto");
+const EnvironmentSystemACStuteRef = ref(database, "/EnvironmentSystem/ACState");
+const EnvironmentSystemTempeRef = ref(database, "/EnvironmentSystem/Temperature");
+const EnvironmentSystemHumidityRef = ref(database, "/EnvironmentSystem/Humidity");
+const SecuritySystemAlarmRef = ref(database, "/SecuritySystem/Alarm");
+const SecuritySystemLastAccessRef = ref(database, "/SecuritySystem/LastAccess");
+const GardenSystemStuteRef = ref(database, "/GardenSystem/Auto");
+const GarageSystemWaterPumpRef = ref(database, "/GardenSystem/WaterPump");
 
 // UI Elements
 // Lighting
@@ -42,6 +51,22 @@ const armSecurityButton = document.getElementById("arm-security");
 const disarmSecurityButton = document.getElementById("disarm-security");
 const securityStatusElement = document.getElementById("security-status");
 const lastAccessElement = document.getElementById("last-access");
+const GarageSystemOpne = document.getElementById("opne-garag");
+const GarageSystemClose = document.getElementById("close-garag");
+const EnableEnvironmentAuto = document.getElementById("enable-environment-auto");
+const EnableEnvironmentManual = document.getElementById("disable-environment-auto");
+const ACState = document.getElementById("environment-ac-state");
+const EnvironmentTempElement = document.getElementById("environment-temperature");
+const EnvironmentHumElement = document.getElementById("environment-humidity");
+const SecuritySystemAlarm = document.getElementById("Alarm");
+const GarageSystemAuto = document.getElementById("water-garden-auto");
+const GarageSystemManual = document.getElementById("water-garden-manual");
+const GarageSystemWaterPumpOn = document.getElementById("water-garden-on");
+const GarageSystemWaterPumpOff = document.getElementById("water-garden-off");
+const GarageSystemStute = document.getElementById("garden-status");
+
+
+
 
 // Garden System
 const gardenSoilElement = document.getElementById("garden-soil-moisture");
@@ -50,6 +75,8 @@ const gardenTempElement = document.getElementById("garden-temperature");
 const gardenHumidityElement = document.getElementById("garden-humidity");
 const greenLedElement = document.getElementById("green-led");
 const redLedElement = document.getElementById("red-led");
+const GarageSystemStuteElement = document.getElementById("GarageSystemStute");
+const EnvironmentSystemStuteElement = document.getElementById("environment-status");
 
 // Utility Functions
 const toggleLed = (element, state, color) => {
@@ -74,37 +101,53 @@ indoorLightAutoButton.addEventListener("click", () => set(indoorLightAutoRef, tr
 indoorLightManualButton.addEventListener("click", () => set(indoorLightAutoRef, false));
 outdoorLedOnButton.addEventListener("click", () => set(outdoorLedRef, 1));
 outdoorLedOffButton.addEventListener("click", () => set(outdoorLedRef, 0));
+GarageSystemOpne.addEventListener("click", () => set(GarageSystemStuteRef, true));
+GarageSystemClose.addEventListener("click", () => set(GarageSystemStuteRef, false));
+EnableEnvironmentAuto.addEventListener("click", () => set(EnvironmentSystemStuteRef, true));
+EnableEnvironmentManual.addEventListener("click", () => set(EnvironmentSystemStuteRef, false));
+GarageSystemAuto.addEventListener("click", () => set(GardenSystemStuteRef, true));
+GarageSystemManual.addEventListener("click", () => set(GardenSystemStuteRef, false));
+GarageSystemWaterPumpOn.addEventListener("click", () => set(GarageSystemWaterPumpRef, true));
+GarageSystemWaterPumpOff.addEventListener("click", () => set(GarageSystemWaterPumpRef, false));
 
 // Arm and Disarm Buttons
-armSecurityButton.addEventListener("click", () => set(securityArmedRef, true));
-disarmSecurityButton.addEventListener("click", () => set(securityArmedRef, false));
+armSecurityButton.addEventListener("click", () => set(securityArmedRef, 1));
+disarmSecurityButton.addEventListener("click", () => set(securityArmedRef, 0));
 
 // Garden System Sensors
 updateUI(gardenSoilRef, gardenSoilElement, "Soil Moisture");
 updateUI(gardenRainRef, gardenRainElement, "Rain", (data) => (data ? "Yes" : "No"));
 updateUI(gardenTempRef, gardenTempElement, "Temperature");
 updateUI(gardenHumidityRef, gardenHumidityElement, "Humidity");
-// updateUI(outdoorLedRef, gardenRainElement, "Outdoor LED", (data) => (data === 1 ? "ON" : "OFF"));
+updateUI(GarageSystemStuteRef, GarageSystemStuteElement, "Garage Stute");
+updateUI(EnvironmentSystemStuteRef, EnvironmentSystemStuteElement, "Mode", (data) => (data ? "Auto" : "Manual"));
+updateUI(EnvironmentSystemACStuteRef, ACState, "AC State", (data) => (data ? "ON" : "OFF"));
+updateUI(EnvironmentSystemTempeRef, EnvironmentTempElement, "Temperature");
+updateUI(EnvironmentSystemHumidityRef, EnvironmentHumElement, "Humidity");
+updateUI(SecuritySystemAlarmRef, SecuritySystemAlarm, "Alarm", (data) => (data ? "ON" : "OFF"));
+updateUI(SecuritySystemLastAccessRef, lastAccessElement, "Last Access was");
+updateUI(GardenSystemStuteRef, GarageSystemStute, "Garden Stute", (data) => (data ? "Auto" : "Manual"));
 
-// Update LEDs for garden system
-onValue(gardenSoilRef, (snapshot) => {
-    const soilMoisture = snapshot.val();
-    if (soilMoisture !== null) {
-        const rain = gardenRainElement.textContent.includes("Yes");
-        const greenState = soilMoisture > 400 || rain; // Assume 400 as soil moisture threshold
-        const redState = !greenState;
-        toggleLed(greenLedElement, greenState, "green");
-        toggleLed(redLedElement, redState, "red");
-    }
+// // Update LEDs for garden system
+// onValue(gardenSoilRef, (snapshot) => {
+//     const soilMoisture = snapshot.val();
+//     if (soilMoisture !== null) {
+//         const rain = gardenRainElement.textContent.includes("Yes");
+//         const greenState = soilMoisture > 400 || rain; // Assume 400 as soil moisture threshold
+//         const redState = !greenState;
+//         toggleLed(greenLedElement, greenState, "green");
+//         toggleLed(redLedElement, redState, "red");
+//     }
+// });
+
+onValue(GarageSystemWaterPumpRef, (snapshot) => {
+    const isWaterPumpOn = snapshot.val();
+    toggleLed(greenLedElement, isWaterPumpOn, "green");
+    toggleLed(redLedElement, !isWaterPumpOn, "red");
 });
 
 // Update UI with real-time data
 onValue(securityArmedRef, (snapshot) => {
     const isArmed = snapshot.val();
     securityStatusElement.textContent = `Status: ${isArmed ? "Armed" : "Disarmed"}`;
-});
-
-onValue(lastAccessRef, (snapshot) => {
-    const lastAccess = snapshot.val();
-    lastAccessElement.textContent = `Last Access: ${lastAccess || "None"}`;
 });
