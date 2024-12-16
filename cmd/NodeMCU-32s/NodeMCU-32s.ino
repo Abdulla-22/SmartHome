@@ -1,9 +1,11 @@
 #include <DHT.h>
-#include <DHT_U.h>
-#include <ESP32Servo.h> // Include ESP32Servo library
-#include <AccelStepper.h>
 #include <WiFi.h>
+#include <DHT_U.h>
+#include <ESP32Servo.h>
+#include <AccelStepper.h>
 #include <Firebase_ESP_Client.h>
+
+
 
 #define DHTPIN 4      // Pin connected to the DHT11 sensor
 #define DHTTYPE DHT11 // Define the type of DHT sensor
@@ -430,6 +432,7 @@ void handleArduinoCommunication()
   {
     // Read incoming command from Arduino
     String command = ArduinoSerial.readStringUntil('\n');
+    command.trim();
     processArduinoCommand(command); // Process the command
   }
 }
@@ -437,13 +440,7 @@ void handleArduinoCommunication()
 // Function to process commands from Arduino
 void processArduinoCommand(String command)
 {
-  if (command.startsWith("BASKET_DISTANCE"))
-  {
-    // Log the garbage basket distance to Firebase
-    int distance = command.substring(16).toInt();
-    Firebase.RTDB.setInt(&fbdo, "/GarbageBasket/Distance", distance);
-  }
-  else if (command.startsWith("SECURITY:"))
+  if (command.startsWith("SECURITY:"))
   {
     Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Alarm", (command.substring(9).toInt()));
   }

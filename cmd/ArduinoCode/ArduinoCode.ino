@@ -1,5 +1,4 @@
 #include <Keypad.h>
-#include <Wire.h>
 
 // Pin definitions
 const int buzzerPin = 5;       // Buzzer pin
@@ -11,8 +10,10 @@ const int greenLedPin = 13;    // Green LED pin for access granted
 // Security system
 const String correctPassword = "1234";
 String enteredPassword = "";
-bool securityArmed = true;
+bool securityArmed = false;
+bool prevSecurityArmed = false;
 int counter = 0;
+int LastAccess = 0;
 
 // Keypad setup
 const byte ROWS = 4;
@@ -29,7 +30,6 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 void setup()
 {
   Serial.begin(9600);
-  Wire.begin();
 
   pinMode(pirSensorPin, INPUT);
   pinMode(vibrationSensorPin, INPUT); // Set vibration sensor pin as input
@@ -75,15 +75,24 @@ void handleSecuritySystem()
     {
       digitalWrite(redLedPin, HIGH);
       digitalWrite(buzzerPin, HIGH);
-      sendToESP32("SECURITY: Motion or Vibration detected");
+      sendToESP32("SECURITY:1");
       delay(500); // Alarm delay
     }
     else
     {
+      sendToESP32("SECURITY:0");
       // digitalWrite(redLedPin, LOW);
       // digitalWrite(buzzerPin, LOW);
     }
   }
+
+  // Check for changes in securityArmed and send only if changed
+  if (securityArmed != prevSecurityArmed)
+  {
+    sendToESP32(securityArmed ? "SECURITY_ARMED:1" : "SECURITY_ARMED:0");
+    prevSecurityArmed = securityArmed; // Update the previous state
+  }
+  
 }
 
 void handleKeypadInput(char key)
@@ -103,6 +112,7 @@ void handleKeypadInput(char key)
       digitalWrite(greenLedPin, LOW);
       securityArmed = false;
       counter = 0;
+      LastAccess++;
     }
     else
     {
