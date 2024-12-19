@@ -5,8 +5,6 @@
 #include <AccelStepper.h>
 #include <Firebase_ESP_Client.h>
 
-
-
 #define DHTPIN 4      // Pin connected to the DHT11 sensor
 #define DHTTYPE DHT11 // Define the type of DHT sensor
 
@@ -32,7 +30,7 @@ HardwareSerial ArduinoSerial(2); // Serial2 (ESP32 UART communication)
 #define IN3 22
 #define IN4 23
 AccelStepper garageMotor(8, IN1, IN3, IN2, IN4); // Use 8 for HALFSTEP mode
-bool garageOpen = false; // Garage open/close state
+bool garageOpen = false;                         // Garage open/close state
 
 DHT dht(DHTPIN, DHTTYPE);        // Initialize the DHT sensor
 bool environmentAutoMode = true; // Automatic environment control mode
@@ -217,7 +215,6 @@ void readDB()
 
   // Security System mode
   Firebase.RTDB.getBool(&fbdo, "/SecuritySystem/Armed", &ArmedMode);
-
 }
 
 void handleLightingSystem()
@@ -368,12 +365,20 @@ void handleEnvironmentControl()
       digitalWrite(acGreenLedPin, HIGH); // Turn on the green LED (AC ON)
       digitalWrite(acRedLedPin, LOW);    // Turn off the red LED (AC OFF)
       Serial.println("Air Conditioner ON.");
+      if (!Firebase.RTDB.setBool(&fbdo, "/EnvironmentSystem/ACState", true))
+      {
+        Serial.println("Failed to log AC State: " + fbdo.errorReason());
+      }
     }
     else
     {
       digitalWrite(acGreenLedPin, LOW); // Turn off the green LED (AC OFF)
       digitalWrite(acRedLedPin, HIGH);  // Turn on the red LED (AC OFF)
       Serial.println("Air Conditioner OFF.");
+      if (!Firebase.RTDB.setBool(&fbdo, "/EnvironmentSystem/ACState", false))
+      {
+        Serial.println("Failed to log AC State: " + fbdo.errorReason());
+      }
     }
 
     // Log temperature and humidity to Firebase
@@ -394,11 +399,11 @@ void handleEnvironmentControl()
     Serial.println("Manual AC Control: " + String(acBOOL ? "ON" : "OFF"));
   }
 
-  // Log AC state to Firebase
-  if (!Firebase.RTDB.setBool(&fbdo, "/EnvironmentSystem/ACState", digitalRead(acGreenLedPin) == HIGH))
-  {
-    Serial.println("Failed to log AC State: " + fbdo.errorReason());
-  }
+  // // Log AC state to Firebase
+  // if (!Firebase.RTDB.setBool(&fbdo, "/EnvironmentSystem/ACState", digitalRead(acGreenLedPin) == HIGH))
+  // {
+  //   Serial.println("Failed to log AC State: " + fbdo.errorReason());
+  // }
 }
 
 void handleGarageDoor()
@@ -444,7 +449,7 @@ void processArduinoCommand(String command)
   {
     Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Alarm", (command.substring(9).toInt()));
   }
-  else if (command.startsWith("SECURITY_ARMED:")) 
+  else if (command.startsWith("SECURITY_ARMED:"))
   {
     Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Armed", (command.substring(15).toInt()));
   }
