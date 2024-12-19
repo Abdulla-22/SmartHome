@@ -64,6 +64,8 @@ const GarageSystemManual = document.getElementById("water-garden-manual");
 const GarageSystemWaterPumpOn = document.getElementById("water-garden-on");
 const GarageSystemWaterPumpOff = document.getElementById("water-garden-off");
 const GarageSystemStute = document.getElementById("garden-status");
+const ACon = document.getElementById("ACon");
+const ACoff = document.getElementById("ACoff");
 
 
 
@@ -109,6 +111,8 @@ GarageSystemAuto.addEventListener("click", () => set(GardenSystemStuteRef, true)
 GarageSystemManual.addEventListener("click", () => set(GardenSystemStuteRef, false));
 GarageSystemWaterPumpOn.addEventListener("click", () => set(GarageSystemWaterPumpRef, true));
 GarageSystemWaterPumpOff.addEventListener("click", () => set(GarageSystemWaterPumpRef, false));
+ACon.addEventListener("click", () => set(EnvironmentSystemACStuteRef, true));
+ACoff.addEventListener("click", () => set(EnvironmentSystemACStuteRef, false));
 
 // Arm and Disarm Buttons
 armSecurityButton.addEventListener("click", () => set(securityArmedRef, 1));
