@@ -9,8 +9,8 @@
 #define DHTTYPE DHT11 // Define the type of DHT sensor
 
 /* Wi-Fi and Firebase credentials */
-#define WIFI_SSID "Zain_H122_CB1E"                                              // Replace with your Wi-Fi SSID
-#define WIFI_PASSWORD "M6GJ2QEF53J"                                             // Replace with your Wi-Fi Password
+#define WIFI_SSID "Ali Hubail"                                              // Replace with your Wi-Fi SSID
+#define WIFI_PASSWORD "Alooy1123"                                             // Replace with your Wi-Fi Password
 #define API_KEY "AIzaSyB0S9NtzkxVAHmU3A-7zLnE3-yTbrPB4dY"                       // Replace with your Firebase API Key
 #define DATABASE_URL "https://espcontroller-dc45b-default-rtdb.firebaseio.com/" // Replace with your Firebase Database URL
 #define USER_EMAIL "abdulla38898@gmail.com"
@@ -63,11 +63,11 @@ bool indoorLightAuto = true;   // Indoor lighting auto/manual mode
 int outdoorLightState = false; // Outdoor lighting state (on/off)
 int indoorLightState = false;  // Indoor lighting state (on/off)
 const int ldrThreshold = 500;  // Threshold for LDR sensor (adjust as needed)
-const int soundThreshold = 25; // Threshold for sound sensor (adjust as needed)
+const int soundThreshold = 20; // Threshold for sound sensor (adjust as needed)
 
 int ArmedMode = 0;
 
-const int moistureThreshold = 2800;
+const int moistureThreshold = 3000;
 bool WaterPump = false;
 bool gardenAutoMode = true;
 
