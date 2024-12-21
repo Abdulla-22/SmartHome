@@ -43,7 +43,7 @@ const int acRedLedPin = 12;      // Red LED for AC OFF
 const int trigPin = 18;          // Ultrasonic sensor trigger pin
 const int echoPin = 19;          // Ultrasonic sensor echo pin
 const int servoPin = 21;         // Servo motor pin for basket
-const int garbageThreshold = 20; // Distance threshold to open the basket (in cm)
+const int garbageThreshold = 10; // Distance threshold to open the basket (in cm)
 // Servo object
 Servo garbageServo;
 
@@ -173,7 +173,7 @@ void handleGarbageBasketSystem()
   if (distance > 0 && distance < garbageThreshold)
   {
     delay(1000);
-    garbageServo.write(90); // Open the basket
+    garbageServo.write(100); // Open the basket
     Serial.println("Basket Opened.");
   }
   else
