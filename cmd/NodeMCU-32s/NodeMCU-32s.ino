@@ -25,8 +25,8 @@ FirebaseConfig config;
 HardwareSerial ArduinoSerial(2); // Serial2 (ESP32 UART communication)
 
 // Stepper Motor pins and configuration for garage system
-#define IN1 4
-#define IN2 5
+#define IN1 5
+#define IN2 13
 #define IN3 22
 #define IN4 23
 AccelStepper garageMotor(8, IN1, IN3, IN2, IN4); // Use 8 for HALFSTEP mode
