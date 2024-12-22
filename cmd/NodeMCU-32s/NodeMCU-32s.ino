@@ -5,115 +5,100 @@
 #include <AccelStepper.h>
 #include <Firebase_ESP_Client.h>
 
-#define DHTPIN 4      // Pin connected to the DHT11 sensor
-#define DHTTYPE DHT11 // Define the type of DHT sensor
+// DHT sensor configuration
+#define DHTPIN 4
+#define DHTTYPE DHT11
 
-/* Wi-Fi and Firebase credentials */
-#define WIFI_SSID "Ali Hubail"                                              // Replace with your Wi-Fi SSID
-#define WIFI_PASSWORD "Alooy1123"                                             // Replace with your Wi-Fi Password
-#define API_KEY "AIzaSyB0S9NtzkxVAHmU3A-7zLnE3-yTbrPB4dY"                       // Replace with your Firebase API Key
-#define DATABASE_URL "https://espcontroller-dc45b-default-rtdb.firebaseio.com/" // Replace with your Firebase Database URL
+// Wi-Fi and Firebase credentials
+#define WIFI_SSID "Ali Hubail"
+#define WIFI_PASSWORD "Alooy1123"
+#define API_KEY "AIzaSyB0S9NtzkxVAHmU3A-7zLnE3-yTbrPB4dY"
+#define DATABASE_URL "https://espcontroller-dc45b-default-rtdb.firebaseio.com/"
 #define USER_EMAIL "abdulla38898@gmail.com"
 #define USER_PASSWORD "12345678"
 
-// Firebase objects for communication with the database
+// Firebase objects
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
 // Serial communication with Arduino
-HardwareSerial ArduinoSerial(2); // Serial2 (ESP32 UART communication)
+HardwareSerial ArduinoSerial(2); // UART2
 
-// Stepper Motor pins and configuration for garage system
+// Stepper Motor configuration for garage system
 #define IN1 5
 #define IN2 13
 #define IN3 22
 #define IN4 23
-AccelStepper garageMotor(8, IN1, IN3, IN2, IN4); // Use 8 for HALFSTEP mode
-bool garageOpen = false;                         // Garage open/close state
+AccelStepper garageMotor(8, IN1, IN3, IN2, IN4);
+bool garageOpen = false;
 
-DHT dht(DHTPIN, DHTTYPE);        // Initialize the DHT sensor
-bool environmentAutoMode = true; // Automatic environment control mode
-const int tempThreshold = 30;    // Temperature threshold for AC in °C
-bool acBOOL = false;             // Manual AC control state
-const int acGreenLedPin = 14;    // Green LED for AC ON
-const int acRedLedPin = 12;      // Red LED for AC OFF
+// DHT sensor and environment control
+DHT dht(DHTPIN, DHTTYPE);
+bool environmentAutoMode = true;
+const int tempThreshold = 30;
+bool acBOOL = false;
+const int acGreenLedPin = 14;
+const int acRedLedPin = 12;
 
-// Garbage Basket System pins
-const int trigPin = 18;          // Ultrasonic sensor trigger pin
-const int echoPin = 19;          // Ultrasonic sensor echo pin
-const int servoPin = 21;         // Servo motor pin for basket
-const int garbageThreshold = 10; // Distance threshold to open the basket (in cm)
-// Servo object
+// Garbage Basket System
+const int trigPin = 18;
+const int echoPin = 19;
+const int servoPin = 21;
+const int garbageThreshold = 10;
 Servo garbageServo;
 
-// Sensor pins connected to ESP32
-const int ldrPin = 34;         // LDR sensor for outdoor lighting
-const int outdoorLedPin = 25;  // Outdoor LED
-const int indoorLedPin = 26;   // Indoor LED
-const int soundSensorPin = 35; // Sound sensor for indoor lighting
+// Lighting System
+const int ldrPin = 34;
+const int outdoorLedPin = 25;
+const int indoorLedPin = 26;
+const int soundSensorPin = 35;
+bool outdoorLightAuto = true;
+bool indoorLightAuto = true;
+int outdoorLightState = false;
+int indoorLightState = false;
+const int ldrThreshold = 500;
+const int soundThreshold = 20;
 
-const int waterPumpPin = 27;    // LED to simulate water pump
-const int soilMoisturePin = 32; // Soil moisture sensor pin
-const int rainSensorPin = 33;   // Rain sensor pin (digital)
+// Garden System
+const int waterPumpPin = 27;
+const int soilMoisturePin = 32;
+const int rainSensorPin = 33;
+const int moistureThreshold = 3000;
+bool gardenAutoMode = true;
+bool WaterPump = false;
 
-// System variables
-bool outdoorLightAuto = true;  // Outdoor lighting auto/manual mode
-bool indoorLightAuto = true;   // Indoor lighting auto/manual mode
-int outdoorLightState = false; // Outdoor lighting state (on/off)
-int indoorLightState = false;  // Indoor lighting state (on/off)
-const int ldrThreshold = 500;  // Threshold for LDR sensor (adjust as needed)
-const int soundThreshold = 20; // Threshold for sound sensor (adjust as needed)
-
+// Security System
 int ArmedMode = 0;
 
-const int moistureThreshold = 3000;
-bool WaterPump = false;
-bool gardenAutoMode = true;
+// Variables for garbage basket system
+int lastState = 0; // 0 = closed, 1 = open
 
-void setup()
-{
-  Serial.begin(115200);                          // Debugging
-  ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17); // Communication with Arduino
+void setup() {
+  Serial.begin(115200);
+  ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17);
 
-  // Garage system setup
-  garageMotor.setMaxSpeed(1000);    // Maximum speed in steps per second
-  garageMotor.setAcceleration(500); // Acceleration in steps per second^2
-
-  dht.begin(); // Initialize DHT11 sensor
+  // Initialize sensors and actuators
+  dht.begin();
   pinMode(acGreenLedPin, OUTPUT);
   pinMode(acRedLedPin, OUTPUT);
-
-  // Initialize garbage basket pins
+  pinMode(outdoorLedPin, OUTPUT);
+  pinMode(indoorLedPin, OUTPUT);
+  pinMode(waterPumpPin, OUTPUT);
+  pinMode(soilMoisturePin, INPUT);
+  pinMode(rainSensorPin, INPUT);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   garbageServo.attach(servoPin);
   garbageServo.write(0); // Close the basket initially
 
-  // Turn off LEDs initially
-  digitalWrite(acGreenLedPin, LOW);
-  digitalWrite(acRedLedPin, LOW);
-
-  pinMode(outdoorLedPin, OUTPUT);
-  pinMode(indoorLedPin, OUTPUT);
-
-  pinMode(waterPumpPin, OUTPUT);
-  pinMode(soilMoisturePin, INPUT);
-  pinMode(rainSensorPin, INPUT);
-
-  pinMode(acGreenLedPin, OUTPUT);
-  pinMode(acRedLedPin, OUTPUT);
-
-  // Turn off LEDs initially
-  digitalWrite(acGreenLedPin, LOW);
-  digitalWrite(acRedLedPin, LOW);
-
-  digitalWrite(waterPumpPin, LOW); // Ensure the LED is off initially
+  // Garage motor setup
+  garageMotor.setMaxSpeed(1000);
+  garageMotor.setAcceleration(500);
 
   // Connect to Wi-Fi
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED)
-  {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(300);
     Serial.print(".");
   }
@@ -127,61 +112,62 @@ void setup()
   Firebase.begin(&config, &auth);
 }
 
-void loop()
-{
-  // Read sensor data and log to Firebase
-  // readAndLogSensors();
+void loop() {
+  // Periodic tasks
   readDB();
-
   handleLightingSystem();
-
   handleGardenSystem();
-
   handleEnvironmentControl();
-
   handleGarbageBasketSystem();
-
   handleGarageDoor();
-
-  // Handle communication with Arduino
   handleArduinoCommunication();
 }
 
-int getBasketDistance()
-{
-  long duration;
-  int distance;
-
-  // Trigger the ultrasonic sensor
+// Garbage basket distance measurement
+int getBasketDistance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  // Measure distance
-  duration = pulseIn(echoPin, HIGH);
-  distance = duration * 0.034 / 2; // Convert to cm
-  Serial.println("The Des: " + String(distance));
+  long duration = pulseIn(echoPin, HIGH);
+  int distance = duration * 0.034 / 2;
+  Serial.println("Basket Distance: " + String(distance));
   return distance;
 }
 
-void handleGarbageBasketSystem()
-{
-  int distance = getBasketDistance();
-
-  if (distance > 0 && distance < garbageThreshold)
-  {
-    delay(1000);
-    garbageServo.write(100); // Open the basket
-    Serial.println("Basket Opened.");
-  }
-  else
-  {
-    garbageServo.write(0); // Close the basket
-    Serial.println("Basket Closed.");
+// Move servo motor gradually
+void moveServoSlowly(Servo &servo, int startAngle, int endAngle, int delayMs) {
+  if (startAngle < endAngle) {
+    for (int angle = startAngle; angle <= endAngle; angle++) {
+      servo.write(angle);
+      delay(delayMs);
+    }
+  } else {
+    for (int angle = startAngle; angle >= endAngle; angle--) {
+      servo.write(angle);
+      delay(delayMs);
+    }
   }
 }
+
+// Handle garbage basket system
+void handleGarbageBasketSystem() {
+  int distance = getBasketDistance();
+  if (distance > 0 && distance < garbageThreshold && lastState == 0) {
+    delay(1000);
+    moveServoSlowly(garbageServo, 0, 50, 20);
+    Serial.println("Basket Opened.");
+    lastState = 1;
+  } else if (distance > garbageThreshold + 5 && lastState == 1) {
+    moveServoSlowly(garbageServo, 50, 0, 20);
+    Serial.println("Basket Closed.");
+    lastState = 0;
+  }
+}
+
+
 
 // Function to read sensor data and log it to Firebase (not used)
 void readAndLogSensors()
