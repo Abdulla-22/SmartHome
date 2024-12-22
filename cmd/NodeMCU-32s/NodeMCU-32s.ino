@@ -411,7 +411,7 @@ void handleGarageDoor()
   if (garageOpen)
   {
     Serial.println("Opening Garage Door...");
-    garageMotor.moveTo(10240); // Move forward (open position) 1rev = 2048
+    garageMotor.moveTo(1100); // Move forward (open position) 1rev = 2048
     while (garageMotor.distanceToGo() != 0)
     {
       garageMotor.run();
