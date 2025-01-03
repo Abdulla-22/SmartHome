@@ -58,7 +58,7 @@ bool indoorLightAuto = true;
 int outdoorLightState = false;
 int indoorLightState = false;
 const int ldrThreshold = 500;
-const int soundThreshold = 50;
+const int soundThreshold = 100;
 
 // Garden System
 const int waterPumpPin = 27;
