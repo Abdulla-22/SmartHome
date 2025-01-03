@@ -10,8 +10,9 @@ const int greenLedPin = 13;    // Green LED pin for access granted
 // Security system
 const String correctPassword = "1234";
 String enteredPassword = "";
-bool securityArmed = false;
+bool armedStatus = false; // Local flag for armed mode
 bool prevSecurityArmed = false;
+bool securityMode = false;  // Database-controlled flag
 int counter = 0;
 int LastAccess = 0;
 
@@ -41,6 +42,8 @@ void setup()
   digitalWrite(redLedPin, LOW);
   digitalWrite(greenLedPin, LOW);
   digitalWrite(buzzerPin, LOW);
+
+  Serial.println("System Initialized.");
 }
 
 void loop()
@@ -52,47 +55,36 @@ void loop()
   handleSecuritySystem();
 
   if (Serial.available())
-  {
+{
+    Serial.println("Data available on Serial."); // Debug message
     String command = Serial.readStringUntil('\n');
+    Serial.print("Received command: ");
+    Serial.println(command);
     processESP32Command(command);
-  }
+}
 }
 
 // Function to handle security system
 void handleSecuritySystem()
 {
-  if (counter > 3) 
+  if (counter >= 3)
   {
-    securityArmed = true;
+    armedStatus = true;
   }
-  if (securityArmed)
+
+  if (armedStatus) // Only check motion when armed
   {
     int motionDetected = digitalRead(pirSensorPin);
     int vibrationDetected = digitalRead(vibrationSensorPin);
 
-    // Trigger alarm if motion or vibration is detected
     if (motionDetected || vibrationDetected)
     {
       digitalWrite(redLedPin, HIGH);
       digitalWrite(buzzerPin, HIGH);
-      sendToESP32("SECURITY:1");
-      delay(500); // Alarm delay
+      Serial.println("Alarm is on"); // Print the alarm status
     }
-    else
-    {
-      sendToESP32("SECURITY:0");
-      // digitalWrite(redLedPin, LOW);
-      // digitalWrite(buzzerPin, LOW);
-    }
-  }
 
-  // Check for changes in securityArmed and send only if changed
-  if (securityArmed != prevSecurityArmed)
-  {
-    sendToESP32(securityArmed ? "SECURITY_ARMED:1" : "SECURITY_ARMED:0");
-    prevSecurityArmed = securityArmed; // Update the previous state
-  }
-  
+}
 }
 
 void handleKeypadInput(char key)
@@ -110,40 +102,44 @@ void handleKeypadInput(char key)
       digitalWrite(greenLedPin, HIGH);
       delay(1000);
       digitalWrite(greenLedPin, LOW);
-      securityArmed = false;
-      counter = 0;
+      armedStatus = false;
+      counter = 0; // Reset counter on successful entry
       LastAccess++;
     }
     else
     {
+      counter++; // Increment the counter for wrong attempts
       Serial.println("Access denied.");
-      digitalWrite(redLedPin, HIGH);
       digitalWrite(buzzerPin, HIGH);
+      digitalWrite(redLedPin, HIGH);
       delay(1000);
       digitalWrite(redLedPin, LOW);
       digitalWrite(buzzerPin, LOW);
-      counter++;
     }
-    enteredPassword = "";
+
+    enteredPassword = ""; // Clear the entered password
   }
   else if (key == '*')
   {
-    enteredPassword = "";
+    enteredPassword = ""; // Clear the entered password
   }
   else
   {
-    enteredPassword += key;
+    enteredPassword += key; // Append the pressed key to the password
     Serial.println("Password so far: " + enteredPassword);
   }
 }
 
 void processESP32Command(String command)
 {
-  if (command.startsWith("SECURITY_ARMED"))
+  command.trim(); // Remove any extra spaces or newline characters
+  if (command.startsWith("SECURITY_MODE:"))
   {
-    int armedState = command.substring(15).toInt();
-    securityArmed = (armedState == 1);
-    Serial.println(securityArmed ? "Security armed." : "Security disarmed.");
+    String modeStr = command.substring(14); // Extract the value after "SECURITY_MODE:"
+    int mode = modeStr.toInt(); // Convert the extracted value to an integer
+    armedStatus = (mode == 1); // Update security mode
+    Serial.print("Security mode updated: ");
+    Serial.println(armedStatus ? "Armed" : "Disarmed");
   }
   else
   {
@@ -151,7 +147,3 @@ void processESP32Command(String command)
   }
 }
 
-void sendToESP32(const String &data)
-{
-  Serial.println(data);
-}

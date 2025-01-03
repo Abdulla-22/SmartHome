@@ -58,7 +58,7 @@ bool indoorLightAuto = true;
 int outdoorLightState = false;
 int indoorLightState = false;
 const int ldrThreshold = 500;
-const int soundThreshold = 20;
+const int soundThreshold = 50;
 
 // Garden System
 const int waterPumpPin = 27;
@@ -75,7 +75,7 @@ int ArmedMode = 0;
 int lastState = 0; // 0 = closed, 1 = open
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17);
 
   // Initialize sensors and actuators
@@ -121,6 +121,7 @@ void loop() {
   handleGarbageBasketSystem();
   handleGarageDoor();
   handleArduinoCommunication();
+  handleSecuritySystem(); // Check security system status
 }
 
 // Garbage basket distance measurement
@@ -186,6 +187,7 @@ void readAndLogSensors()
 
 void readDB()
 {
+  // Read various system states from Firebase
   Firebase.RTDB.getBool(&fbdo, "/LightingSystem/Outdoor/Auto", &outdoorLightAuto);
   Firebase.RTDB.getBool(&fbdo, "/LightingSystem/Indoor/Auto", &indoorLightAuto);
   Firebase.RTDB.getInt(&fbdo, "/LightingSystem/Outdoor/State", &outdoorLightState);
@@ -199,10 +201,10 @@ void readDB()
   // Read the garage door open/close status
   Firebase.RTDB.getBool(&fbdo, "/EnvironmentSystem/GarageSystemStute", &garageOpen);
 
-  // Security System mode
-  Firebase.RTDB.getBool(&fbdo, "/SecuritySystem/Armed", &ArmedMode);
+  // Security System mode (armed/disarmed)
+  Firebase.RTDB.getBool(&fbdo, "/SecuritySystem/Armed", &ArmedMode); // Read Armed mode
+  Serial.println("Security Mode: " + String(ArmedMode ? "Armed" : "Disarmed"));
 }
-
 void handleLightingSystem()
 {
   // Outdoor lighting control
@@ -421,7 +423,7 @@ void handleArduinoCommunication()
 {
   if (ArduinoSerial.available())
   {
-    // Read incoming command from Arduino
+    // Read incoming command from ESP32
     String command = ArduinoSerial.readStringUntil('\n');
     command.trim();
     processArduinoCommand(command); // Process the command
@@ -431,12 +433,35 @@ void handleArduinoCommunication()
 // Function to process commands from Arduino
 void processArduinoCommand(String command)
 {
-  if (command.startsWith("SECURITY:"))
+  if (command.startsWith("SECURITY_ARMED:"))
   {
-    Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Alarm", (command.substring(9).toInt()));
+    int armedStatus = command.substring(15).toInt();
+    if (armedS tatus == 1)
+    {
+      Serial.println("Security system is ARMED");
+      // Handle armed mode actions (e.g., activate alarm, lock doors)
+    }
+    else
+    {
+      Serial.println("Security system is DISARMED");
+      // Handle disarmed mode actions (e.g., deactivate alarm, unlock doors)
+    }
   }
-  else if (command.startsWith("SECURITY_ARMED:"))
+}
+
+void handleSecuritySystem()
+{
+  // Check if the security system is armed or disarmed
+  if (ArmedMode == 1)
   {
-    Firebase.RTDB.setInt(&fbdo, "/SecuritySystem/Armed", (command.substring(15).toInt()));
+    // Perform actions when armed (e.g., trigger alarm, lock doors, etc.)
+    Serial.println("Security system is ARMED");
+    ArduinoSerial.println("SECURITY_ARMED:1"); // Send armed status to Arduino
+  }
+  else
+  {
+    // Perform actions when disarmed (e.g., deactivate alarm, unlock doors, etc.)
+    Serial.println("Security system is DISARMED");
+    ArduinoSerial.println("SECURITY_ARMED:0"); // Send disarmed status to Arduino
   }
 }
