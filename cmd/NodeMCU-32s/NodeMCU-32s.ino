@@ -75,7 +75,7 @@ int ArmedMode = 0;
 int lastState = 0; // 0 = closed, 1 = open
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   ArduinoSerial.begin(9600, SERIAL_8N1, 16, 17);
 
   // Initialize sensors and actuators
@@ -436,14 +436,18 @@ void processArduinoCommand(String command)
   if (command.startsWith("SECURITY_ARMED:"))
   {
     int armedStatus = command.substring(15).toInt();
-    if (armedS tatus == 1)
+    if (armedStatus == 1)
     {
       Serial.println("Security system is ARMED");
+      Firebase.RTDB.setBool(&fbdo, "/SecuritySystem/Armed", true);
+
       // Handle armed mode actions (e.g., activate alarm, lock doors)
     }
     else
     {
       Serial.println("Security system is DISARMED");
+      Firebase.RTDB.setBool(&fbdo, "/SecuritySystem/Armed", false);
+
       // Handle disarmed mode actions (e.g., deactivate alarm, unlock doors)
     }
   }
@@ -456,12 +460,12 @@ void handleSecuritySystem()
   {
     // Perform actions when armed (e.g., trigger alarm, lock doors, etc.)
     Serial.println("Security system is ARMED");
-    ArduinoSerial.println("SECURITY_ARMED:1"); // Send armed status to Arduino
+    ArduinoSerial.println("SECURITY_MODE:1"); // Send armed status to Arduino
   }
   else
   {
     // Perform actions when disarmed (e.g., deactivate alarm, unlock doors, etc.)
     Serial.println("Security system is DISARMED");
-    ArduinoSerial.println("SECURITY_ARMED:0"); // Send disarmed status to Arduino
+    ArduinoSerial.println("SECURITY_MODE:0"); // Send disarmed status to Arduino
   }
 }

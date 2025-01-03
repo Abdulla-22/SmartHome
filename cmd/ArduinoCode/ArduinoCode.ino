@@ -81,10 +81,26 @@ void handleSecuritySystem()
     {
       digitalWrite(redLedPin, HIGH);
       digitalWrite(buzzerPin, HIGH);
+      
+      // sendToESP32("SECURITY:1");
+
       Serial.println("Alarm is on"); // Print the alarm status
+    }
+    else
+    {
+      digitalWrite(redLedPin, LOW);
+      digitalWrite(buzzerPin, LOW);
+      
     }
 
 }
+
+// Check for changes in securityArmed and send only if changed
+  if (armedStatus != prevSecurityArmed)
+  {
+    sendToESP32(armedStatus ? "SECURITY_ARMED:1" : "SECURITY_ARMED:0");
+    prevSecurityArmed = armedStatus; // Update the previous state
+  }
 }
 
 void handleKeypadInput(char key)
@@ -146,4 +162,10 @@ void processESP32Command(String command)
     Serial.println("Unknown command received: " + command);
   }
 }
+
+void sendToESP32(const String &data)
+{
+  Serial.println(data);
+}
+
 
